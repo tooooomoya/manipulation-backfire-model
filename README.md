@@ -5,16 +5,25 @@ Welcome to the VS Code Java world. Here is a guideline to help you get started t
 
 
 ```
-javac -cp "$(find lib -name '*.jar' | tr '\n' ':')" -d bin src/**/*.java      
-java -cp "$(find lib -name '*.jar' | tr '\n' ':'):bin" dynamics.OpinionDynamics
+javac -cp "$(find lib -name '*.jar' 2>/dev/null | tr '\n' ':')" -d bin src/**/*.java   
+java -cp "$(find lib -name '*.jar' 2>/dev/null | tr '\n' ':'):bin" dynamics.OpinionDynamics 0 1.0
 ```
 
+where "0" is a random seed and "1.0" is the target side.
 This simulation files require gephi library for visualization. 
 gephi tool kits can be freely downloaded on the website. 
 
+## Pararell Processing
+
+Using shell file (run.sh) can make pararell processing possible. By rewiriting run.sh, you can change seeds to simulate concurrently. 
+
+```
+bash run.sh
+```
+
 ## Folder Structure
 
-Make sure you create `results` folder as we do not upload them on github.
+Make sure you create `results` folder just under the current directory.
 
 The workspace contains two folders by default, where:
 
@@ -32,12 +41,4 @@ The `JAVA PROJECTS` view allows you to manage your dependencies. More details ca
 
 ## Python virtual environment
 
-For using analysis python files, our requirments.txt may be useful
-
-## Pararell Processing
-
-Using shell file (run.sh) can make pararell processing possible. By rewiriting run.sh, you can change seeds to simulate concurrently. 
-
-```
-bash run.sh
-```
+For using analysis python notebooks, our requirments.txt may be useful. We confirm they work by Python 3.11
