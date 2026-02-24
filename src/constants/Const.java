@@ -22,11 +22,11 @@ public class Const {
     public static final double REPOST_PROB = 0.4;
     public static final double POST_COST = 0.0;
     public static final double MU_PARAM = 0.1; // Marginal Utility log func parameter
-    public static final double OPINION_PREVALENCE = 0.5; // now on sensitivity analysis
+    public static final double OPINION_PREVALENCE = 0.5;
     public static final double INITIAL_OPINION_STD = 0.6;
     public static final double MAX_FOLLOW_CAPACITY = 10;
     public static final double BC_DEC_RATE = 0.99;
-    public static final double INITIAL_STUBBORNNESS = 0.9;
+    public static final double INITIAL_STUBBORNNESS = 0.8;
 
     // user num = 1000
     public static final double INITIAL_CNN_SEED_GRAPH_CONNECT_PROB = 0.2;
