@@ -1,0 +1,6 @@
+results/
+bin/
+venv/
+*.log
+*.png
+*.gif
