@@ -4,3 +4,4 @@ venv/
 *.log
 *.png
 *.gif
+.python-version
