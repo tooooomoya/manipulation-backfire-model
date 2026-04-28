@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 
 public class Writer {
 
+    private static final int BATCH_SIZE = 1000;
+
     private int simulationStep;
     private String folderPath;
     private double opinionVar;
@@ -21,12 +23,16 @@ public class Writer {
     private int[] opinionBins = new int[Const.NUM_OF_BINS_OF_OPINION_FOR_WRITER];
     private double opinionBinWidth;
     private double opinionAvg;
-    private double feedVar;
     private double[] feedMeanArray;
     private double[] feedVarArray;
     private double[] cRateMeanArray;
     private double[] cRateVarArray;
     private double[] highComfortRateNumArray;
+
+    private int batchStartStep = 0;
+    private StringBuilder metricsBuf = new StringBuilder();
+    private StringBuilder postsBuf   = new StringBuilder();
+    private StringBuilder opinionBuf = new StringBuilder();
 
     public Writer(String folderPath, String[] resultList) {
         this.simulationStep = -1;
@@ -40,7 +46,6 @@ public class Writer {
         this.postBinWidth = 2.0 / postBins.length;
         this.opinionBinWidth = 2.0 / opinionBins.length;
         this.opinionAvg = 0.0;
-        this.feedVar = -1;
         this.feedMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
         this.feedVarArray = new double[Const.NUM_OF_BINS_OF_OPINION];
         this.cRateMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
@@ -48,7 +53,8 @@ public class Writer {
         this.highComfortRateNumArray = new double[Const.NUM_OF_BINS_OF_OPINION];
     }
 
-    // Setter
+    // Setters
+
     public void setSimulationStep(int step) {
         this.simulationStep = step;
         this.opinionVar = -1;
@@ -73,10 +79,6 @@ public class Writer {
 
     public void setOpinionAvg(double value) {
         this.opinionAvg = value;
-    }
-
-    public void setFeedVar(double value) {
-        this.feedVar = value;
     }
 
     public void setFeedMeanArray(double[] original) {
@@ -126,162 +128,116 @@ public class Writer {
         }
     }
 
+    // Accumulate one step into buffers; flush to disk when BATCH_SIZE is reached.
     public void write() {
 
         //// metrics
-        String filePath = folderPath + "/metrics/result_" + simulationStep + ".csv";
+        if (metricsBuf.length() == 0) {
+            metricsBuf.append("step");
+            for (String key : resultList) metricsBuf.append(",").append(key);
+            metricsBuf.append("\n");
+        }
+        StringBuilder row = new StringBuilder().append(simulationStep);
+        for (String key : resultList) {
+            row.append(",");
+            if (appendSingleMetric(row, key)) continue;
 
-        try (PrintWriter pw = new PrintWriter(new FileWriter(filePath, false))) {
-            // write a header row
-            StringBuilder header = new StringBuilder();
-            header.append("step");
-            for (String key : resultList) {
-                header.append(",").append(key);
-            }
-            pw.println(header.toString());
-
-            // write a result row
-            StringBuilder sb = new StringBuilder();
-            sb.append(simulationStep);
-
-            for (String key : resultList) {
-                sb.append(",");
-
-                // 1. 固定の単一指標を先に処理
-                if (handleSingleMetric(sb, key)) {
-                    continue; // マッチしたら次のキーへ
-                }
-
-                // 2. 配列系の動的指標を処理 (_0, _1 などが含まれるもの)
-                int lastUnderscoreIndex = key.lastIndexOf("_");
-                if (lastUnderscoreIndex != -1) {
-                    String prefix = key.substring(0, lastUnderscoreIndex);
-                    String suffix = key.substring(lastUnderscoreIndex + 1);
-
-                    try {
-                        int index = Integer.parseInt(suffix);
-
-                        // インデックスが現在のBin設定の範囲内かチェック
-                        if (index >= 0 && index < Const.NUM_OF_BINS_OF_POSTS) {
-                            switch (prefix) {
-                                case "feedPostOpinionMean":
-                                    sb.append(String.format("%.4f", this.feedMeanArray[index]));
-                                    break;
-                                case "feedPostOpinionVar":
-                                    sb.append(String.format("%.4f", this.feedVarArray[index]));
-                                    break;
-                                case "cRateMean":
-                                    sb.append(String.format("%.4f", this.cRateMeanArray[index]));
-                                    break;
-                                case "cRateVar":
-                                    sb.append(String.format("%.4f", this.cRateVarArray[index]));
-                                    break;
-                                case "highComfortRateNum":
-                                    sb.append(String.format("%.4f", this.highComfortRateNumArray[index]));
-                                    break;
-                                default:
-                                    sb.append(""); // 定義されていないプレフィックスの場合
-                                    break;
-                            }
-                        } else {
-                            // resultListにはあるが、現在のBin数設定では範囲外の場合（空文字または0を入れる）
-                            sb.append("");
+            int lastUnderscore = key.lastIndexOf("_");
+            if (lastUnderscore != -1) {
+                String prefix = key.substring(0, lastUnderscore);
+                String suffix = key.substring(lastUnderscore + 1);
+                try {
+                    int index = Integer.parseInt(suffix);
+                    if (index >= 0 && index < Const.NUM_OF_BINS_OF_POSTS) {
+                        switch (prefix) {
+                            case "feedPostOpinionMean" -> row.append(String.format("%.4f", this.feedMeanArray[index]));
+                            case "feedPostOpinionVar"  -> row.append(String.format("%.4f", this.feedVarArray[index]));
+                            case "cRateMean"           -> row.append(String.format("%.4f", this.cRateMeanArray[index]));
+                            case "cRateVar"            -> row.append(String.format("%.4f", this.cRateVarArray[index]));
+                            case "highComfortRateNum"  -> row.append(String.format("%.4f", this.highComfortRateNumArray[index]));
+                            default                    -> row.append("");
                         }
-                    } catch (NumberFormatException e) {
-                        // _の後ろが数字ではなかった場合
-                        sb.append("");
+                    } else {
+                        row.append("");
                     }
-                } else {
-                    // 定義されていないキーの場合
-                    sb.append("");
+                } catch (NumberFormatException e) {
+                    row.append("");
                 }
+            } else {
+                row.append("");
             }
-
-            pw.println(sb.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        metricsBuf.append(row).append("\n");
 
-        //// posts related metrics
-        String postsFilePath = folderPath + "/posts/post_result_" + simulationStep + ".csv";
-
-        try (PrintWriter pw = new PrintWriter(new FileWriter(postsFilePath, false))) {
-            StringBuilder header = new StringBuilder();
-            header.append("step");
-
-            for (int i = 0; i < postBins.length; i++) {
-                header.append(",bin_").append(i);
-            }
-            header.append(",sumOfPosts");
-            pw.println(header.toString());
-
-            StringBuilder sb = new StringBuilder();
-            sb.append(simulationStep);
-            int sumOfPosts = 0;
-
-            for (int i = 0; i < postBins.length; i++) {
-                sb.append(",").append(postBins[i]);
-                sumOfPosts += postBins[i];
-            }
-            sb.append(",").append(sumOfPosts);
-
-            pw.println(sb.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
+        //// posts
+        if (postsBuf.length() == 0) {
+            postsBuf.append("step");
+            for (int i = 0; i < postBins.length; i++) postsBuf.append(",bin_").append(i);
+            postsBuf.append(",sumOfPosts\n");
         }
-
-        //// opinion related metrics
-        String opinionFilePath = folderPath + "/opinion/opinion_result_" + simulationStep + ".csv";
-
-        try (PrintWriter pw = new PrintWriter(new FileWriter(opinionFilePath, false))) {
-
-            StringBuilder header = new StringBuilder();
-            header.append("step");
-
-            for (int i = 0; i < opinionBins.length; i++) {
-                header.append(",bin_").append(i);
-            }
-            pw.println(header.toString());
-
-            StringBuilder sb = new StringBuilder();
-            sb.append(simulationStep);
-
-            for (int i = 0; i < opinionBins.length; i++) {
-                sb.append(",").append(opinionBins[i]);
-            }
-
-            pw.println(sb.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
+        StringBuilder postsRow = new StringBuilder().append(simulationStep);
+        int sumOfPosts = 0;
+        for (int i = 0; i < postBins.length; i++) {
+            postsRow.append(",").append(postBins[i]);
+            sumOfPosts += postBins[i];
         }
+        postsRow.append(",").append(sumOfPosts);
+        postsBuf.append(postsRow).append("\n");
 
+        //// opinion
+        if (opinionBuf.length() == 0) {
+            opinionBuf.append("step");
+            for (int i = 0; i < opinionBins.length; i++) opinionBuf.append(",bin_").append(i);
+            opinionBuf.append("\n");
+        }
+        StringBuilder opRow = new StringBuilder().append(simulationStep);
+        for (int i = 0; i < opinionBins.length; i++) opRow.append(",").append(opinionBins[i]);
+        opinionBuf.append(opRow).append("\n");
+
+        if (simulationStep - batchStartStep + 1 >= BATCH_SIZE) {
+            flushBatch();
+        }
     }
 
-    private boolean handleSingleMetric(StringBuilder sb, String key) {
+    // Flush any remaining buffered rows at end of simulation.
+    public void flush() {
+        if (metricsBuf.length() > 0) {
+            flushBatch();
+        }
+    }
+
+    private void flushBatch() {
+        int batchEnd = simulationStep;
+        writeBuffer(metricsBuf,
+            folderPath + "/metrics/result_" + batchStartStep + "_" + batchEnd + ".csv");
+        writeBuffer(postsBuf,
+            folderPath + "/posts/post_result_" + batchStartStep + "_" + batchEnd + ".csv");
+        writeBuffer(opinionBuf,
+            folderPath + "/opinion/opinion_result_" + batchStartStep + "_" + batchEnd + ".csv");
+        metricsBuf.setLength(0);
+        postsBuf.setLength(0);
+        opinionBuf.setLength(0);
+        batchStartStep = simulationStep + 1;
+    }
+
+    private void writeBuffer(StringBuilder buf, String filePath) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(filePath, false))) {
+            pw.print(buf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // name reflects append-to-buffer semantics; returns true if key was handled
+    private boolean appendSingleMetric(StringBuilder sb, String key) {
         switch (key) {
-            case "opinionVar":
-                sb.append(String.format("%.4f", this.opinionVar));
-                return true;
-            case "postOpinionVar":
-                sb.append(String.format("%.4f", this.postOpinionVar));
-                return true;
-            case "follow":
-                sb.append(this.followActionNum);
-                return true;
-            case "unfollow":
-                sb.append(this.unfollowActionNum);
-                return true;
-            case "rewire":
-                sb.append(this.rewireActionNum);
-                return true;
-            case "opinionAvg":
-                sb.append(String.format("%.4f", this.opinionAvg));
-                return true;
-            case "feedVar":
-                sb.append(String.format("%.4f", this.feedVar));
-                return true;
-            default:
-                return false;
+            case "opinionVar"     -> { sb.append(String.format("%.4f", this.opinionVar));     return true; }
+            case "postOpinionVar" -> { sb.append(String.format("%.4f", this.postOpinionVar)); return true; }
+            case "follow"         -> { sb.append(this.followActionNum);                        return true; }
+            case "unfollow"       -> { sb.append(this.unfollowActionNum);                      return true; }
+            case "rewire"         -> { sb.append(this.rewireActionNum);                        return true; }
+            case "opinionAvg"     -> { sb.append(String.format("%.4f", this.opinionAvg));     return true; }
+            default               -> { return false; }
         }
     }
 
@@ -289,23 +245,15 @@ public class Writer {
         String filePath = outputDirPath + "/degrees/degree_result_" + simulationStep + ".csv";
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(filePath, false))) {
-
             pw.println("agentId,inDegree,outDegree");
-
             int numAgents = adjacencyMatrix.length;
-
             for (int i = 0; i < numAgents; i++) {
                 int outDegree = 0;
                 int inDegree = 0;
-
                 for (int j = 0; j < numAgents; j++) {
                     outDegree += (adjacencyMatrix[i][j] > 0) ? 1 : 0;
+                    inDegree  += (adjacencyMatrix[j][i] > 0) ? 1 : 0;
                 }
-
-                for (int j = 0; j < numAgents; j++) {
-                    inDegree += (adjacencyMatrix[j][i] > 0) ? 1 : 0;
-                }
-
                 pw.printf("%d,%d,%d%n", i, inDegree, outDegree);
             }
         } catch (IOException e) {
@@ -317,16 +265,12 @@ public class Writer {
         String filePath = outputDirPath + "/clusterings/clustering_result_" + simulationStep + ".csv";
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(filePath, false))) {
-
             pw.println("agentId,clusteringCoefficient");
-
             for (int i = 0; i < clustering.length; i++) {
                 pw.printf("%d,%.6f%n", i, clustering[i]);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 }

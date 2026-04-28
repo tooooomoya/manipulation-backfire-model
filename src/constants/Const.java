@@ -25,7 +25,7 @@ public class Const {
     public static final double OPINION_PREVALENCE = 0.5;
     public static final double INITIAL_OPINION_STD = 0.6;
     public static final double MAX_FOLLOW_CAPACITY = 10;
-    public static final double BC_DEC_RATE = 0.99;
+    public static final double BC_DEC_RATE = 0.99;  // bc only decays; no recovery — see deferred issue §8.2
     public static final double INITIAL_STUBBORNNESS = 0.8;
 
     // user num = 1000
@@ -38,13 +38,12 @@ public class Const {
     public static final double DECREMENT_PP = INCREMENT_PP;
 
     public static final double INITIAL_PU = 0.1; // Prob of Using platform (Accessing platform)
+    // DEFERRED §8.1: MAX_PU == MIN_PU == INITIAL_PU pins useProb to a constant — adaptive engagement is inert
     public static final double MAX_PU = INITIAL_PU;
     public static final double MIN_PU = INITIAL_PU;
     public static final double INCREMENT_PU = 0.01;
     public static final double DECREMENT_PU = INCREMENT_PU;
     
-    public static final double DECREMENT_BC = 0.003;
-
     // follow parameter
     public static final double FOLLOW_PROB = 0.1;
 

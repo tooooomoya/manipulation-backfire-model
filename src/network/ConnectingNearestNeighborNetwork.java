@@ -42,16 +42,14 @@ public class ConnectingNearestNeighborNetwork extends Network {
 
         double r = 0.01;
 
-        int currentSize = 3;
+        int currentSize = 2;
         
         setEdge(0, 1, 1);
-        setEdge(0, 2, 1);
         setEdge(1, 0, 1);
-        setEdge(2, 0, 1);
 
         while (currentSize < getSize()) {
             if (randomGenerator.get().nextDouble() < 1 - this.p) {
-                // 新しいノードを追加
+                // add new node and connect to a random existing node with probability 1-p
                 int newNode = currentSize++;
                 int v = randomGenerator.get().nextInt(newNode);
                 setEdge(newNode, v, 1);
@@ -62,6 +60,7 @@ public class ConnectingNearestNeighborNetwork extends Network {
                     }
                 }
             } else {
+                // with probability p, convert a potential edge to an actual edge (or add a random edge)
                 if (randomGenerator.get().nextDouble() < 1 - r) { // CNN with random links (CNNR)
                     // convert potential edge to actual edge
                     if (!potentialEdges.isEmpty()) {
