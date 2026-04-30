@@ -277,7 +277,12 @@ public class Agent {
 
         //// social influence
 
-        this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
+        if(this.target) {
+            this.opinion += 0.01 * Const.TARGET_DIRECTION;
+        } else {
+            // standard DeGroot model with stubbornness (= Friedkin-Johnsen model) 
+            this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
+        }
 
         //// clipping
 
@@ -292,15 +297,6 @@ public class Agent {
 
         // bc is in [Const.MINIMUM_BC, 1.0]
         this.bc = Math.max(this.bc, Math.min(Const.MINIMUM_BC, 1.0));
-
-
-        //// exp 
-        
-        if(this.target) {
-            this.opinion = Const.TARGET_DIRECTION;
-        }
-        
-        ////
 
         setOpinionClass();
     }

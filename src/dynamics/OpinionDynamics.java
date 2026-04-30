@@ -53,9 +53,10 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.1);
+        //this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.1, 0.01);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
-        //this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        ///this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        this.network = new DMSNetwork(agentNum, 3, 1);
         /////
 
         this.network.makeNetwork(agentSet);
@@ -118,7 +119,7 @@ public class OpinionDynamics {
         int unfollowActionNum;
 
         for (int step = 1; step <= t; step++) {
-            System.out.println("step = " + step);
+            if(step % 1000 == 0) System.out.println("step = " + step);
             followActionNum = 0;
             unfollowActionNum = 0;
 

@@ -36,7 +36,7 @@ public abstract class Network {
     // change the num of posts from user j that user i can see
     public void setEdge(int i, int j, double weight) {
         if (i >= 0 && i < size && j >= 0 && j < size) {
-            adjacencyMatrix[i][j] = 1.0;
+            adjacencyMatrix[i][j] = weight;
         }
     }
 
