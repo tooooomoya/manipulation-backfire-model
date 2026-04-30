@@ -80,13 +80,13 @@ public class RepostVisualize {
             graphModel.getNodeTable().addColumn("intrinsicOpinion", Double.class);
         }
 
-        Column bot = graphModel.getNodeTable().getColumn("bot");
-        if (bot == null) {
-            graphModel.getNodeTable().addColumn("bot", Boolean.class);
+        Column targetCol = graphModel.getNodeTable().getColumn("target");
+        if (targetCol == null) {
+            graphModel.getNodeTable().addColumn("target", Boolean.class);
         }
 
         Column step = graphModel.getNodeTable().getColumn("step");
-        if (bot == null) {
+        if (step == null) {
             graphModel.getNodeTable().addColumn("step", Integer.class);
         }
 
@@ -101,7 +101,7 @@ public class RepostVisualize {
             node.setAttribute("useProb", agents[i].getuseProb());
             node.setAttribute("shiftedOpinion", agents[i].getOpinion() - agents[i].getIntrinsicOpinion());
             node.setAttribute("intrinsicOpinion", agents[i].getIntrinsicOpinion());
-            node.setAttribute("bot", agents[i].getTarget());
+            node.setAttribute("target", agents[i].getTarget());
             node.setAttribute("step", 0);
             graph.addNode(node);
         }
@@ -143,7 +143,7 @@ public class RepostVisualize {
                 node.setAttribute("useProb", agents[i].getuseProb());
                 node.setAttribute("shiftedOpinion", agents[i].getOpinion() - agents[i].getIntrinsicOpinion());
                 node.setAttribute("intrinsicOpinion", agents[i].getIntrinsicOpinion());
-                node.setAttribute("bot", agents[i].getTarget());
+                node.setAttribute("target", agents[i].getTarget());
                 node.setAttribute("step", step);
             }
         }

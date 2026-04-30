@@ -3,6 +3,7 @@ package admin;
 import agent.Agent;
 import constants.Const;
 import java.util.*;
+import rand.randomGenerator;
 
 public class ExpIntervention {
     private int n;
@@ -43,39 +44,37 @@ public class ExpIntervention {
 
     // --- 実験介入用のメソッド群 ---
 
-    // ニュートラルで影響力のあるユーザー（操作対象）を取得
+    // Returns a randomly selected moderate influencer whose follower count
+    // meets the 5% floor, so structural type varies naturally across seeds.
     public List<Integer> getManipulationTarget(Agent[] agentSet, double[][] W) {
         calculateFollowerCounts(W);
-        List<Map.Entry<Integer, Integer>> rankingList = getFollowerRanking();
-        
-        List<Integer> neutralUsers = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> entry : rankingList) {
-            int userId = entry.getKey();
-            double opinion = agentSet[userId].getOpinion();
-            
-            if (Math.abs(opinion) < 0.2) {
-                neutralUsers.add(userId);
+
+        int followerFloor = (int) Math.ceil(0.05 * n);
+
+        List<Integer> pool = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            double opinion = agentSet[i].getOpinion();
+            if (Math.abs(opinion) < 0.2 && followerNumArray[i] >= followerFloor) {
+                pool.add(i);
             }
         }
 
+        System.out.println("Moderate-influencer pool size: " + pool.size()
+                + " (follower floor=" + followerFloor + ")");
+
         List<Integer> result = new ArrayList<>();
-        // 元のロジックに準拠：2番目のニュートラルユーザーをターゲットにする
-        if (neutralUsers.size() > 2) {
-            result.add(neutralUsers.get(0));
+        if (!pool.isEmpty()) {
+            int chosen = pool.get(randomGenerator.get().nextInt(pool.size()));
+            result.add(chosen);
+        } else {
+            System.out.println("[WARN] No moderate influencer meets the follower floor; skipping targeting.");
         }
 
-        // 対象ユーザーの情報を出力
         for (int id : result) {
-            System.out.println("Manipulation Target User ID: " + id + ", Opinion: " + agentSet[id].getOpinion() + ", Followers: " + followerNumArray[id]);
+            System.out.println("Manipulation Target User ID: " + id
+                    + ", Opinion: " + agentSet[id].getOpinion()
+                    + ", Followers: " + followerNumArray[id]);
         }
-
-        // フォロワー数の閾値チェック
-        // for (int id : result) {
-        //     if (followerNumArray[id] < Const.FOLLOWER_THRESHOLD) {
-        //         System.out.println("⚠️ [TERMINATE] Target User " + id + " has only " + followerNumArray[id] + " followers (Threshold: " + Const.FOLLOWER_THRESHOLD + ")");
-        //         System.exit(0); // 正常終了
-        //     }
-        // }
 
         return result;
     }
