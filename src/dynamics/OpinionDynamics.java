@@ -53,10 +53,10 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        //this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.1, 0.01);
+        //this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
         ///this.network = new BarabasiAlbertNetwork(agentNum, 3);
-        this.network = new DMSNetwork(agentNum, 5, 1);
+        this.network = new DMSNetwork(agentNum, 3, 2);
         /////
 
         this.network.makeNetwork(agentSet);

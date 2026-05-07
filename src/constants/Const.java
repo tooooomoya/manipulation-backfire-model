@@ -3,7 +3,7 @@ package constants;
 public class Const {
     // simulation parameter
     public static final int MAX_SIMULATION_STEP = 40000;
-    public static final int NUM_OF_USER = 2000;
+    public static final int NUM_OF_USER = 1000;
     public static final int NUM_OF_SNS_USER = NUM_OF_USER;
     public static int RANDOM_SEED = 0;
     public static double TARGET_DIRECTION = 0;
@@ -19,20 +19,20 @@ public class Const {
     // agent parameter
     public static final double BOUNDED_CONFIDENCE = 1.0; // initial bc
     public static final double MINIMUM_BC = 0.2;
-    public static final double REPOST_PROB = 0.25;
+    public static final double REPOST_PROB = 0.2;
     public static final double POST_COST = 0.0;
     public static final double MU_PARAM = 0.1; // Marginal Utility log func parameter
     public static final double OPINION_PREVALENCE = 0.5;
     public static final double INITIAL_OPINION_STD = 0.5;
     public static final double MAX_FOLLOW_CAPACITY = 10;
-    public static final double BC_DEC_RATE = 0.99;  // bc only decays; no recovery — see deferred issue §8.2
+    public static final double BC_DEC_RATE = 0.98;  // bc only decays; no recovery
     public static final double INITIAL_STUBBORNNESS = 0.8;
 
     public static final double INITIAL_CNN_SEED_GRAPH_CONNECT_PROB = 0.2;
 
     public static final double INITIAL_PP = 0.1; // Prob of Posting
     public static final double MAX_PP = 1.0;
-    public static final double MIN_PP = 0.05;
+    public static final double MIN_PP = 0.01;
     public static final double INCREMENT_PP = 0.1;
     public static final double DECREMENT_PP = INCREMENT_PP;
 
@@ -44,10 +44,10 @@ public class Const {
     public static final double DECREMENT_PU = INCREMENT_PU;
     
     // follow parameter
-    public static final double FOLLOW_PROB = 0.1;
+    public static final double FOLLOW_PROB = 0.05;
 
     // unfollow parameter
-    public static final double UNFOLLOW_PROB = 0.1;
+    public static final double UNFOLLOW_PROB = 0.05;
 
     // input data parameter
     public static final String EDGES_FILE_PATH = "Twitter/edgesTwitter.txt";
