@@ -82,9 +82,9 @@ public class GraphVisualize {
             graphModel.getNodeTable().addColumn("intrinsicOpinion", Double.class);
         }
 
-        Column bot = graphModel.getNodeTable().getColumn("bot");
-        if (bot == null) {
-            graphModel.getNodeTable().addColumn("bot", Boolean.class);
+        Column target = graphModel.getNodeTable().getColumn("target");
+        if (target == null) {
+            graphModel.getNodeTable().addColumn("target", Boolean.class);
         }
 
         for (int i = 0; i < nodeCount; i++) {
@@ -98,7 +98,7 @@ public class GraphVisualize {
             node.setAttribute("useProb", agents[i].getuseProb());
             node.setAttribute("shiftedOpinion", agents[i].getOpinion() - agents[i].getIntrinsicOpinion());
             node.setAttribute("intrinsicOpinion", agents[i].getIntrinsicOpinion());
-            node.setAttribute("bot", agents[i].getTarget());
+            node.setAttribute("target", agents[i].getTarget());
             graph.addNode(node);
         }
 
@@ -152,7 +152,7 @@ public class GraphVisualize {
                 node.setAttribute("useProb", agents[i].getuseProb());
                 node.setAttribute("shiftedOpinion", agents[i].getOpinion() - agents[i].getIntrinsicOpinion());
                 node.setAttribute("intrinsicOpinion", agents[i].getIntrinsicOpinion());
-                node.setAttribute("bot", agents[i].getTarget());
+                node.setAttribute("target", agents[i].getTarget());
             }
         }
 

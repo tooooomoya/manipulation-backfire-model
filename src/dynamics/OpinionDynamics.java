@@ -53,9 +53,17 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3);
+        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
-        //this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        // this.network = new DMSNetwork(agentNum, 3, 2);
+        // this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
+        // this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        // LFR benchmark: (size, avgDegree, maxDegree, mu, gamma, beta, minComm, maxComm)
+        // this.network = new LFRNetwork(agentNum, 10, 50, 0.2, 2.5, 1.5, 10, 50);
+        // DC-SBM: (size, numCommunities, pIn, pOut, gamma, targetAvgDegree)
+        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10);
+        // DC-SBM full: (..., OutDegreeMode, balancedCommunities, outSigma, outShape)
+        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10, DCSBMNetwork.OutDegreeMode.LOGNORMAL, false, 0.3, 10.0);
         /////
 
         this.network.makeNetwork(agentSet);
@@ -67,7 +75,6 @@ public class OpinionDynamics {
         for (int i = 0; i < agentNum; i++) {
             agentSet[i] = new Agent(i);
             agentSet[i].setFollowList(tempAdjacencyMatrix);
-            agentSet[i].setFollowerNum(tempAdjacencyMatrix);
         }
     }
 
@@ -91,11 +98,12 @@ public class OpinionDynamics {
     // main part of the experimental dynamics
     public void evolve() {
         this.ASChecker = new AssertionCheck(agentSet, network, agentNum, t);
-        
+        ExpIntervention expIntervention = new ExpIntervention(agentNum, admin.getAdjacencyMatrix());
+
         // make sure that there are at least one agent for each intrinsic opinion
         // Top three hub users will have different opinions
-        double[] opinions = { 0.0, -1.0, 1.0 };
-        List<Integer> topKInfluencers = admin.getTopInfluencers(opinions.length);
+        double[] opinions = { -1.0, 1.0 };
+        List<Integer> topKInfluencers = expIntervention.getTopInfluencers(opinions.length);
         Collections.shuffle(topKInfluencers, randomGenerator.get());
         for (int j = 0; j < opinions.length; j++) {
             int agentId = topKInfluencers.get(j);
@@ -116,10 +124,9 @@ public class OpinionDynamics {
 
         int followActionNum;
         int unfollowActionNum;
-        int latestListSize = Const.LATEST_POST_LIST_LENGTH;
 
         for (int step = 1; step <= t; step++) {
-            System.out.println("step = " + step);
+            if(step % 1000 == 0) System.out.println("step = " + step);
             followActionNum = 0;
             unfollowActionNum = 0;
 
@@ -127,23 +134,21 @@ public class OpinionDynamics {
             analyzer.resetFeedMap();
             writer.clearPostBins();
             writer.setSimulationStep(step);
-            double[][] W = admin.getAdjacencyMatrix();
             List<Post> postList = new ArrayList<>();
 
             List<Agent> shuffledAgents = new ArrayList<>(Arrays.asList(agentSet));
             Collections.shuffle(shuffledAgents, randomGenerator.get());
 
-            if(step == 20000) {
-                List<Integer> targetUsers = admin.getManipulationTarget(agentSet);
+            if (step == 20000) {
+                List<Integer> targetUsers = expIntervention.getManipulationTarget(agentSet, admin.getAdjacencyMatrix(), Const.NUM_MANIPULATION_TARGETS);
                 System.out.println("Target users for manipulation: " + targetUsers);
-                for(int userId : targetUsers) {
+                for (int userId : targetUsers) {
                     agentSet[userId].setTarget();
                 }
             }
 
             for (Agent agent : shuffledAgents) {
                 int agentId = agent.getId();
-                agent.setFollowerNum(W);
                 agent.setTimeStep(step);
                 agent.resetUsed();
 
@@ -162,10 +167,8 @@ public class OpinionDynamics {
                 List<Post> repostedPostList = agent.repost();
                 for (Post repostedPost : repostedPostList) {
                     repostNetwork[agentId][repostedPost.getPostUserId()]++;
-                    for (Agent otherAgent : agentSet) {
-                        if (W[otherAgent.getId()][agentId] > 0.00) { // add posts to followers' feeds
-                            otherAgent.addToPostCash(repostedPost);
-                        }
+                    for (int followerId : admin.getFollowers(agentId)) {
+                        agentSet[followerId].addToPostCash(repostedPost);
                     }
                     agentSet[repostedPost.getPostUserId()].receiveLike();
                 }
@@ -179,10 +182,8 @@ public class OpinionDynamics {
                 /////// post
                 if (randomGenerator.get().nextDouble() < agent.getPostProb()) {
                     Post post = agent.makePost(step);
-                    for (Agent otherAgent : agentSet) {
-                        if (W[otherAgent.getId()][agentId] > 0.00) {
-                            otherAgent.addToPostCash(post);
-                        }
+                    for (int followerId : admin.getFollowers(agentId)) {
+                        agentSet[followerId].addToPostCash(post);
                     }
                     writer.setPostBins(post);
                     analyzer.setPostCash(post);
@@ -193,29 +194,28 @@ public class OpinionDynamics {
                 admin.updateAdjacencyMatrix(agentId, followedIds, unfollowedId);
                 agent.resetPostCash();
                 agent.resetFeed();
-                ASChecker.assertionChecker(agentSet, admin, agentNum, step);
-                    if (followedIds[0] >= 0) {
-                        followActionNum++;
-                    }
-                
-                if (unfollowedId >= 0) {
-                    unfollowActionNum++;
-                }
+
+                if (followedIds[0] >= 0) { followActionNum++; }
+                if (unfollowedId >= 0) { unfollowActionNum++; }
             }
 
+            // step-level invariant check: once per step, not per agent
+            ASChecker.assertionChecker(agentSet, admin, agentNum, step);
+
             if (step % 5000 == 0) {
-                // export gexf
-                network.setAdjacencyMatrix(admin.getAdjacencyMatrix());
+                double[][] W5k = admin.getAdjacencyMatrix(); // local, discarded after block
+                network.setAdjacencyMatrix(W5k);
                 gephi.updateGraph(agentSet, network);
                 gephi.exportGraph(step, folerPath);
                 repostGephi.updateGraph(agentSet, repostNetwork, step);
                 repostGephi.exportGraph(step, folerPath);
-                for (int[] repostNetwork1 : repostNetwork) {
-                    Arrays.fill(repostNetwork1, 0);
+                for (int[] row : repostNetwork) {
+                    Arrays.fill(row, 0);
                 }
-                writer.writeDegrees(W, folerPath);
-                writer.writeClusteringCoefficients(analyzer.computeClusteringCoefficients(W), folerPath);
+                writer.writeDegrees(W5k, folerPath);
+                writer.writeClusteringCoefficients(analyzer.computeClusteringCoefficients(W5k), folerPath);
             }
+
             // export metrics
             writer.setOpinionVar(analyzer.computeVarianceOpinion(agentSet));
             analyzer.computePostVariance();
@@ -233,6 +233,8 @@ public class OpinionDynamics {
             writer.setHighComfortRateNumArray(analyzer.getHighComfortRateNumArray());
             writer.write();
         }
+
+        writer.flush(); // flush final partial batch
     }
 
     public static void main(String[] args) {
@@ -263,7 +265,6 @@ public class OpinionDynamics {
                 Files.createDirectories(resultDir);
             }
 
-            // サブフォルダ作成
             for (String sub : subfolders) {
                 Path subDir = resultDir.resolve(sub);
                 if (!Files.exists(subDir)) {
@@ -277,7 +278,7 @@ public class OpinionDynamics {
         }
 
         Instant start = Instant.now();
-        
+
         OpinionDynamics simulator = new OpinionDynamics();
         simulator.evolve();
 
@@ -290,8 +291,6 @@ public class OpinionDynamics {
         long sec = s % 60;
 
         System.out.printf("Elapsed time:   %02d:%02d:%02d\n", h, m, sec);
-
-        // print some major information about the simulation parameter
 
         simulator.errorReport();
     }

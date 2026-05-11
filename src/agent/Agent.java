@@ -22,11 +22,10 @@ public class Agent {
     private int timeStep;
     private boolean[] followList = new boolean[NUM_OF_AGENTS];
     private boolean[] unfollowList = new boolean[NUM_OF_AGENTS];
-    private int followerNum;
     private boolean used; // whether agent uses platform or not
     private int recievedLikeCount;
     private double repostProb;
-    private static final int COMFORT_MEMORY_SIZE = 100;  // 直近何ステップを保持するか
+    private static final int COMFORT_MEMORY_SIZE = 100;
     private Deque<Double> comfortHistory = new ArrayDeque<>();
 
 
@@ -89,10 +88,6 @@ public class Agent {
 
     public double getuseProb() {
         return this.useProb;
-    }
-
-    public int getFollwerNum() {
-        return this.followerNum;
     }
 
     public PostCash getPostCash() {
@@ -176,15 +171,6 @@ public class Agent {
         }
     }
 
-    public void setFollowerNum(double[][] W) {
-        this.followerNum = 0;
-        for (int i = 0; i < NUM_OF_AGENTS; i++) {
-            if (W[i][this.id] > 0.0) {
-                this.followerNum++;
-            }
-        }
-    }
-
     public void setTarget() {
         this.target = true;
     }
@@ -233,10 +219,9 @@ public class Agent {
         // post prob is set based on the marginal utility theory
         double increment = Const.MU_PARAM * Math.log(this.recievedLikeCount + 1);
     
-        // 100 received likes lead to approximately 1.46 times increase
-        //this.postProb *= 1.0 + increment;
+        this.postProb *= 1.0 + increment;
 
-        this.postProb = Math.min(this.postProb, 1.0);
+        this.postProb = Math.min(this.postProb, Const.MAX_PP);
         this.recievedLikeCount = 0;
     }
 
@@ -258,11 +243,6 @@ public class Agent {
             if (Math.abs(post.getPostOpinion() - this.opinion) > this.bc) {
                 //this.bc -= Const.DECREMENT_BC * decayFunc(this.timeStep);
                 this.bc *= Const.BC_DEC_RATE;
-                // 0.9995だと弱い
-                // 0.999でも弱い
-                // 0.99だと強いかも
-                // 0.995だと弱い
-                // 0.99でちょうど良い
             }
 
         }
@@ -291,7 +271,13 @@ public class Agent {
 
         //// social influence
 
-        this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
+        if(this.target) {
+            this.opinion += 0.01 * Const.TARGET_DIRECTION;
+            this.postProb = Const.MAX_PP;
+        } else {
+            // standard DeGroot model with stubbornness (= Friedkin-Johnsen model) 
+            this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
+        }
 
         //// clipping
 
@@ -306,15 +292,6 @@ public class Agent {
 
         // bc is in [Const.MINIMUM_BC, 1.0]
         this.bc = Math.max(this.bc, Math.min(Const.MINIMUM_BC, 1.0));
-
-
-        //// exp 
-        
-        if(this.target) {
-            this.opinion = Const.TARGET_DIRECTION;
-        }
-        
-        ////
 
         setOpinionClass();
     }
@@ -430,25 +407,6 @@ public class Agent {
         return new int[]{newFollowId, removeTargetId};
     }
 
-    /*public int follow() {
-        List<Integer> candidates = new ArrayList<>();
-
-        for (Post post : this.feed) {
-            if (Math.abs(post.getPostOpinion() - this.opinion) < this.bc && !this.followList[post.getPostUserId()]
-                    && !this.unfollowList[post.getPostUserId()]) {
-                candidates.add(post.getPostUserId());
-            }
-        }
-
-        if (!candidates.isEmpty() && randomGenerator.get().nextDouble() < Const.FOLLOW_PROB) {
-            int followId = candidates.get(randomGenerator.get().nextInt(candidates.size()));
-            this.followList[followId] = true;
-
-            return followId;
-        }
-        return -1;
-    }*/
-
     public int unfollow() {
         int followeeNum = 0;
         for (int i = 0; i < NUM_OF_AGENTS; i++) {
@@ -497,10 +455,5 @@ public class Agent {
         return post;
     }
 
-    public double decayFunc(double time) { // for the sake of convergence
-        double lambda = 0.0002;
-        //return Math.exp(-lambda * time);
-        return 1;
-    }
-
 }
+

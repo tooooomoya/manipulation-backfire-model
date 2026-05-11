@@ -32,44 +32,36 @@ public class BarabasiAlbertNetwork extends Network {
         int initialNodes = m + 1;
         if (initialNodes > n) initialNodes = n;
 
+        // Initial seed: bidirectional complete subgraph so all seed nodes start
+        // with equal total-degree weight in the pool.
         for (int i = 0; i < initialNodes; i++) {
             for (int j = i + 1; j < initialNodes; j++) {
-                // 無向グラフとして双方向リンクを設定
-                addEdge(i, j); 
+                addEdge(i, j);
                 addEdge(j, i);
-
-                // 次数プールに追加（iとjそれぞれの次数が増えたため）
+                // each undirected pair contributes +1 total-degree to both endpoints
                 degreePool.add(i);
                 degreePool.add(j);
             }
         }
 
-        // 残りのノードを1つずつ追加し、既存ノードに接続
+        // Grow: newNode follows m targets chosen by total-degree PA.
+        // Both newNode (out-degree++) and target (in-degree++) enter the pool,
+        // so new nodes are reachable from birth — this recovers gamma = 3.
         for (int newNode = initialNodes; newNode < n; newNode++) {
             Set<Integer> targets = new HashSet<>();
 
-            // m本のリンクを張る相手を探す
             while (targets.size() < this.m) {
                 if (degreePool.isEmpty()) break;
-
-                // degreePoolからランダムに引くことで、
-                // 次数が高い（pool内にたくさん入っている）ノードが選ばれやすくなる
                 int candidate = degreePool.get(randomGenerator.get().nextInt(degreePool.size()));
-
-                // 自己ループと多重辺の回避
                 if (candidate != newNode && !targets.contains(candidate)) {
                     targets.add(candidate);
                 }
             }
 
-            // 選ばれたターゲットと接続
             for (int target : targets) {
-                addEdge(newNode, target);
-                //addEdge(target, newNode); // 有向グラフにしたい場合はこの行を削除
-
-                // 次数プールを更新
-                degreePool.add(newNode);
-                degreePool.add(target);
+                addEdge(newNode, target); // directed: newNode follows target only
+                degreePool.add(newNode);  // newNode's out-degree++ → stays visible for future arrivals
+                degreePool.add(target);   // target's in-degree++
             }
         }
     }
