@@ -53,10 +53,17 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        //this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
+        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
-        ///this.network = new BarabasiAlbertNetwork(agentNum, 3);
-        this.network = new DMSNetwork(agentNum, 3, 2);
+        // this.network = new DMSNetwork(agentNum, 3, 2);
+        // this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
+        // this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        // LFR benchmark: (size, avgDegree, maxDegree, mu, gamma, beta, minComm, maxComm)
+        // this.network = new LFRNetwork(agentNum, 10, 50, 0.2, 2.5, 1.5, 10, 50);
+        // DC-SBM: (size, numCommunities, pIn, pOut, gamma, targetAvgDegree)
+        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10);
+        // DC-SBM full: (..., OutDegreeMode, balancedCommunities, outSigma, outShape)
+        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10, DCSBMNetwork.OutDegreeMode.LOGNORMAL, false, 0.3, 10.0);
         /////
 
         this.network.makeNetwork(agentSet);
@@ -133,7 +140,7 @@ public class OpinionDynamics {
             Collections.shuffle(shuffledAgents, randomGenerator.get());
 
             if (step == 20000) {
-                List<Integer> targetUsers = expIntervention.getManipulationTarget(agentSet, admin.getAdjacencyMatrix());
+                List<Integer> targetUsers = expIntervention.getManipulationTarget(agentSet, admin.getAdjacencyMatrix(), Const.NUM_MANIPULATION_TARGETS);
                 System.out.println("Target users for manipulation: " + targetUsers);
                 for (int userId : targetUsers) {
                     agentSet[userId].setTarget();

@@ -219,10 +219,9 @@ public class Agent {
         // post prob is set based on the marginal utility theory
         double increment = Const.MU_PARAM * Math.log(this.recievedLikeCount + 1);
     
-        // 100 received likes lead to approximately 1.46 times increase
-        //this.postProb *= 1.0 + increment;
+        this.postProb *= 1.0 + increment;
 
-        this.postProb = Math.min(this.postProb, 1.0);
+        this.postProb = Math.min(this.postProb, Const.MAX_PP);
         this.recievedLikeCount = 0;
     }
 
@@ -244,11 +243,6 @@ public class Agent {
             if (Math.abs(post.getPostOpinion() - this.opinion) > this.bc) {
                 //this.bc -= Const.DECREMENT_BC * decayFunc(this.timeStep);
                 this.bc *= Const.BC_DEC_RATE;
-                // 0.9995だと弱い
-                // 0.999でも弱い
-                // 0.99だと強いかも
-                // 0.995だと弱い
-                // 0.99でちょうど良い
             }
 
         }
@@ -279,6 +273,7 @@ public class Agent {
 
         if(this.target) {
             this.opinion += 0.01 * Const.TARGET_DIRECTION;
+            this.postProb = Const.MAX_PP;
         } else {
             // standard DeGroot model with stubbornness (= Friedkin-Johnsen model) 
             this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);

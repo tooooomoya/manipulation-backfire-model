@@ -46,7 +46,7 @@ public class ExpIntervention {
 
     // Returns a randomly selected moderate influencer whose follower count
     // meets the 5% floor, so structural type varies naturally across seeds.
-    public List<Integer> getManipulationTarget(Agent[] agentSet, double[][] W) {
+    public List<Integer> getManipulationTarget(Agent[] agentSet, double[][] W, int numTargets) {
         calculateFollowerCounts(W);
 
         int followerFloor = (int) Math.ceil(0.05 * n);
@@ -60,12 +60,18 @@ public class ExpIntervention {
         }
 
         System.out.println("Moderate-influencer pool size: " + pool.size()
-                + " (follower floor=" + followerFloor + ")");
+                + " (follower floor=" + followerFloor + ", requested=" + numTargets + ")");
 
         List<Integer> result = new ArrayList<>();
         if (!pool.isEmpty()) {
-            int chosen = pool.get(randomGenerator.get().nextInt(pool.size()));
-            result.add(chosen);
+            Collections.shuffle(pool, randomGenerator.get());
+            int count = Math.min(numTargets, pool.size());
+            if (count < numTargets) {
+                System.out.println("[WARN] Pool smaller than requested targets; using " + count + " target(s).");
+            }
+            for (int i = 0; i < count; i++) {
+                result.add(pool.get(i));
+            }
         } else {
             System.out.println("[WARN] No moderate influencer meets the follower floor; skipping targeting.");
         }
