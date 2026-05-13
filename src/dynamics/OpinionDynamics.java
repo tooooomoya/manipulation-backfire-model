@@ -53,13 +53,13 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+        //this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
         // this.network = new DMSNetwork(agentNum, 3, 2);
         // this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
         // this.network = new BarabasiAlbertNetwork(agentNum, 3);
         // LFR benchmark: (size, avgDegree, maxDegree, mu, gamma, beta, minComm, maxComm)
-        // this.network = new LFRNetwork(agentNum, 10, 50, 0.2, 2.5, 1.5, 10, 50);
+        this.network = new LFRNetwork(1000, 3, 50, 0.1, 2.5, 1.5, 50, 250);
         // DC-SBM: (size, numCommunities, pIn, pOut, gamma, targetAvgDegree)
         // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10);
         // DC-SBM full: (..., OutDegreeMode, balancedCommunities, outSigma, outShape)
