@@ -45,11 +45,11 @@ public class ExpIntervention {
     // --- 実験介入用のメソッド群 ---
 
     // Returns a randomly selected moderate influencer whose follower count
-    // meets the 5% floor, so structural type varies naturally across seeds.
+    // meets the 10% floor, so structural type varies naturally across seeds.
     public List<Integer> getManipulationTarget(Agent[] agentSet, double[][] W, int numTargets) {
         calculateFollowerCounts(W);
 
-        int followerFloor = (int) Math.ceil(0.05 * n);
+        int followerFloor = (int) Math.ceil(0.1 * n);
 
         List<Integer> pool = new ArrayList<>();
         for (int i = 0; i < n; i++) {

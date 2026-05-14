@@ -153,6 +153,7 @@ public class Analysis {
             Integer userId = entry.getKey();
             List<Post> feed = entry.getValue();
             Agent agent = agentSet[userId];
+            if (agent.getTarget()) continue;
             int classId = agent.getOpinionClass();
 
             if (feed.isEmpty())
@@ -196,6 +197,7 @@ public class Analysis {
         for (Map.Entry<Integer, List<Post>> entry : feedMap.entrySet()) {
             Integer userId = entry.getKey();
             Agent agent = agentSet[userId];
+            if (agent.getTarget()) continue;
             int classId = agent.getOpinionClass();
 
             double cRate = agent.getAverageComfortRate(); // ★ agent が持っている値を使う
@@ -282,6 +284,7 @@ public class Analysis {
         Arrays.fill(this.highComfortRateNumArray, 0.0);
 
         for (Agent agent : agentSet) {
+            if (agent.getTarget()) continue;
             int classId = agent.getOpinionClass();
             double cRate = agent.getAverageComfortRate();
             if (cRate >= Const.OPINION_PREVALENCE) {
