@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import config.SimConfig;
 import network.*;
 import rand.randomGenerator;
 import writer.Writer;
@@ -51,24 +52,44 @@ public class OpinionDynamics {
     }
 
     private void setNetwork() {
-        ///// you can change the initial network bellow
-        // this.network = new RandomNetwork(agentNum, connectionProbability);
-        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
-        // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
-        // this.network = new DMSNetwork(agentNum, 3, 2);
+        SimConfig cfg = null;
+        try {
+            cfg = new SimConfig("config.yaml");
+        } catch (Exception e) {
+            System.err.println("[WARN] Could not read config.yaml (" + e.getMessage() + "), using HolmeKim default");
+        }
 
-        // this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
-        // this.network = new BarabasiAlbertNetwork(agentNum, 3);
-        
-        // LFR benchmark: (size, avgDegree, maxDegree, mu, gamma, beta, minComm, maxComm)
-        // this.network = new LFRNetwork(agentNum, 3, 50, 0.1, 2.5, 1.5, 50, 250);
-        
-        // DC-SBM: (size, numCommunities, pIn, pOut, gamma, targetAvgDegree)
-        //this.network = new DCSBMNetwork(agentNum, 6, 0.03, 0.008, 2.3, 5);
-        
-        // DC-SBM full: (..., OutDegreeMode, balancedCommunities, outSigma, outShape)
-        //this.network = new DCSBMNetwork(agentNum, 6, 0.03, 0.008, 2.3, 5, DCSBMNetwork.OutDegreeMode.LOGNORMAL, false, 0.3, 10.0);
-        /////
+        if (cfg == null) {
+            this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+        } else {
+            System.out.println("[CONFIG] topology=" + cfg.topology + " params=" + cfg.networkParams);
+            switch (cfg.topology) {
+                case "HolmeKim" -> this.network = new HolmeKimNetwork(agentNum,
+                        cfg.getInt("m", 3), cfg.getInt("A", 1), cfg.getDouble("pt", 0.3));
+                case "LFR"      -> this.network = new LFRNetwork(agentNum,
+                        cfg.getInt("avg_degree", 3), cfg.getInt("max_degree", 50),
+                        cfg.getDouble("mu", 0.3), cfg.getDouble("gamma", 2.5),
+                        cfg.getDouble("beta", 1.5), cfg.getInt("min_comm", 50), cfg.getInt("max_comm", 250));
+                case "DMS"      -> this.network = new DMSNetwork(agentNum,
+                        cfg.getInt("m", 3), cfg.getInt("A", 2));
+                case "BA"       -> this.network = new BarabasiAlbertNetwork(agentNum,
+                        cfg.getInt("m", 3));
+                case "CNNR"     -> this.network = new ConnectingNearestNeighborNetwork(agentNum,
+                        cfg.getDouble("p", 0.3), cfg.getDouble("r", 0.01));
+                case "WS"       -> this.network = new WattsStrogatzNetwork(agentNum,
+                        cfg.getInt("K", 4), cfg.getDouble("beta", 0.1));
+                case "ER"       -> this.network = new RandomNetwork(agentNum,
+                        cfg.getDouble("p", 0.003));
+                case "DCSBM"    -> this.network = new DCSBMNetwork(agentNum,
+                        cfg.getInt("num_communities", 6), cfg.getDouble("p_in", 0.03),
+                        cfg.getDouble("p_out", 0.008), cfg.getDouble("gamma", 2.3),
+                        cfg.getInt("avg_degree", 5));
+                default -> {
+                    System.err.println("[WARN] Unknown topology '" + cfg.topology + "', using HolmeKim");
+                    this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+                }
+            }
+        }
 
         this.network.makeNetwork(agentSet);
         System.out.println("finish making network");
@@ -241,6 +262,8 @@ public class OpinionDynamics {
             writer.setCRateVarArray(analyzer.getCRateVarArray());
             analyzer.computeHighComfortRateNumArray(agentSet);
             writer.setHighComfortRateNumArray(analyzer.getHighComfortRateNumArray());
+            analyzer.computePostProbMeanArray(agentSet);
+            writer.setPostProbMeanArray(analyzer.getPostProbMeanArray());
             writer.write();
 
             if (earlyStop) {

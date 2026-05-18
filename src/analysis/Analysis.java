@@ -14,6 +14,7 @@ public class Analysis {
     private double[] cRateMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
     private double[] cRateVarArray = new double[Const.NUM_OF_BINS_OF_OPINION];
     private double[] highComfortRateNumArray = new double[Const.NUM_OF_BINS_OF_OPINION];
+    private double[] postProbMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
     private Map<Integer, List<Post>> feedMap = new HashMap<>();
 
     // constructor
@@ -42,6 +43,10 @@ public class Analysis {
 
     public double[] getHighComfortRateNumArray() {
         return this.highComfortRateNumArray;
+    }
+
+    public double[] getPostProbMeanArray() {
+        return this.postProbMeanArray;
     }
 
     public void clearPostCash() {
@@ -278,6 +283,24 @@ public class Analysis {
         }
 
         return clustering;
+    }
+
+    public void computePostProbMeanArray(Agent[] agentSet) {
+        Arrays.fill(this.postProbMeanArray, 0.0);
+        int[] agentCount = new int[Const.NUM_OF_BINS_OF_OPINION];
+
+        for (Agent agent : agentSet) {
+            if (agent.getTarget()) continue;
+            int classId = agent.getOpinionClass();
+            this.postProbMeanArray[classId] += agent.getPostProb();
+            agentCount[classId]++;
+        }
+
+        for (int i = 0; i < Const.NUM_OF_BINS_OF_OPINION; i++) {
+            if (agentCount[i] != 0) {
+                this.postProbMeanArray[i] /= agentCount[i];
+            }
+        }
     }
 
     public void computeHighComfortRateNumArray(Agent[] agentSet) {

@@ -1,15 +1,74 @@
-# network topology
-topology: "CNNR"          # "ER", "BA", "CNNR"
+# ── topology ─────────────────────────────────────────────────────────────────
+# Choose one topology and fill in the matching network_params block below.
+# Supported: HolmeKim | LFR | DMS | BA | CNNR | WS | ER | DCSBM
 
-# network parameters
+topology: "HolmeKim"
+
+# ── network_params (pick the block matching your topology) ───────────────────
+
+# HolmeKim: clustering-rich preferential attachment
+#   HolmeKimNetwork(size, m, A, pt)
 network_params:
-  p: 0.3
-  r: 0.01
+  m: 3       # edges added per new node
+  A: 1       # triad-closure candidate count
+  pt: 0.3    # triad-closure probability
 
-# simulation parameters
+# LFR benchmark (community structure)
+#   LFRNetwork(size, avg_degree, max_degree, mu, gamma, beta, min_comm, max_comm)
+# network_params:
+#   avg_degree: 3
+#   max_degree: 50
+#   mu: 0.3       # mixing parameter (fraction of inter-community edges)
+#   gamma: 2.5    # degree power-law exponent
+#   beta: 1.5     # community-size power-law exponent
+#   min_comm: 50
+#   max_comm: 250
+
+# DMS (directed scale-free)
+#   DMSNetwork(size, m, A)
+# network_params:
+#   m: 3
+#   A: 2
+
+# BA (Barabási-Albert)
+#   BarabasiAlbertNetwork(size, m)
+# network_params:
+#   m: 3
+
+# CNNR (Connecting Nearest Neighbor with Rewiring)
+#   ConnectingNearestNeighborNetwork(size, p, r)
+# network_params:
+#   p: 0.3    # initial connection probability
+#   r: 0.01   # random-rewire probability
+
+# WS (Watts-Strogatz small-world)
+#   WattsStrogatzNetwork(size, K, beta)
+# network_params:
+#   K: 4       # each node connected to K nearest neighbours (each side)
+#   beta: 0.1  # rewiring probability
+
+# ER (Erdős-Rényi random)
+#   RandomNetwork(size, p)
+# network_params:
+#   p: 0.003   # edge probability (≈ avg degree 3 for N=1000)
+
+# DCSBM (Degree-Corrected Stochastic Block Model)
+#   DCSBMNetwork(size, num_communities, p_in, p_out, gamma, avg_degree)
+# network_params:
+#   num_communities: 6
+#   p_in: 0.03
+#   p_out: 0.008
+#   gamma: 2.3    # Pareto exponent for in-degree
+#   avg_degree: 5
+
+# ── simulation parameters ────────────────────────────────────────────────────
 N: 1000
-mu: 0.5           # stubbornness in social influence
-epsilon_s: 0.5    # opinion prevalence 
+mu: 0.5
+epsilon_s: 0.5
 delta_p: 0.1
 delta_bc: 0.01
-opinion_std: 0.6  # standard deviation of initial opinions
+opinion_std: 0.6
+start_seed: 0
+end_seed: 99
+num_seed: 50
+target_opinion: 1.0
