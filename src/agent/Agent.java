@@ -247,26 +247,25 @@ public class Agent {
 
         }
 
-        if (postNum == 0)
-            return;
+        if (postNum > 0) {
+            double comfortPostRate = (double) comfortPostNum / postNum;
 
-        double comfortPostRate = (double) comfortPostNum / postNum;
+            comfortHistory.addLast(comfortPostRate);
+            if (comfortHistory.size() > COMFORT_MEMORY_SIZE) {
+                comfortHistory.removeFirst();
+            }
 
-        comfortHistory.addLast(comfortPostRate);
-        if (comfortHistory.size() > COMFORT_MEMORY_SIZE) {
-            comfortHistory.removeFirst();
-        }
-
-        if (comfortPostRate > Const.OPINION_PREVALENCE) {
-            //this.postProb += Const.INCREMENT_PP * decayFunc(this.timeStep);
-            this.postProb *= 1.1;
-            this.useProb *= 1.1;
-            //this.useProb += Const.INCREMENT_PU * decayFunc(this.timeStep);
-        }else if(comfortPostRate <= 1 - Const.OPINION_PREVALENCE){ 
-            //this.useProb -= Const.DECREMENT_PU * decayFunc(this.timeStep);
-            //this.postProb -= Const.DECREMENT_PP * decayFunc(this.timeStep);
-            this.postProb *= 0.9;
-            this.useProb *= 0.9;
+            if (comfortPostRate > Const.OPINION_PREVALENCE) {
+                //this.postProb += Const.INCREMENT_PP * decayFunc(this.timeStep);
+                this.postProb *= 1.1;
+                this.useProb *= 1.1;
+                //this.useProb += Const.INCREMENT_PU * decayFunc(this.timeStep);
+            } else if (comfortPostRate <= 1 - Const.OPINION_PREVALENCE) {
+                //this.useProb -= Const.DECREMENT_PU * decayFunc(this.timeStep);
+                //this.postProb -= Const.DECREMENT_PP * decayFunc(this.timeStep);
+                this.postProb *= 0.9;
+                this.useProb *= 0.9;
+            }
         }
 
         //// social influence
@@ -274,7 +273,7 @@ public class Agent {
         if(this.target) {
             this.opinion += 0.01 * Const.TARGET_DIRECTION;
             this.postProb = Const.MAX_PP;
-        } else {
+        } else if (postNum > 0) {
             // standard DeGroot model with stubbornness (= Friedkin-Johnsen model) 
             this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
         }
