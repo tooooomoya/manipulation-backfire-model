@@ -5,7 +5,13 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 -c \"import json,sys; nb=json.load\\(sys.stdin\\); [print\\(f'Cell {i} source:'\\); print\\(''.join\\(c['source']\\)[:300]\\); print\\('---'\\) for i,c in enumerate\\(nb['cells']\\)]\")",
       "Bash(python3 -c \"import json,sys; nb=json.load\\(sys.stdin\\); [print\\(f'Cell {i}: {c[\\\\\"cell_type\\\\\"]} - {repr\\(\\\\\"\\\\\".join\\(c[\\\\\"source\\\\\"]\\)[:120]\\)}'\\) for i,c in enumerate\\(nb['cells']\\)]\")",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(pip show *)",
+      "Bash(xargs cat)",
+      "Bash(grep -c \"CONDITION=\\\\$\\(\\(CONDITION+1\\)\\)\" /home/tomoyatakeda/document/research/manipulation-backfire-model/run_all.sh)",
+      "Bash(grep -c 'CONDITION=$\\(\\(CONDITION+1\\)\\)' /home/tomoyatakeda/document/research/manipulation-backfire-model/run_all.sh)",
+      "Bash(jupyter nbconvert *)",
+      "Bash(python3)"
     ]
   }
 }

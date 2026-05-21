@@ -1,5 +1,5 @@
 #!/bin/bash
-# Full parameter sweep across all topology conditions.
+# Full parameter sweep across topology × mu × epsilon_s.
 # Compile once → for each condition: write config.yaml → simulate → save-results.ipynb
 set -euo pipefail
 
@@ -11,17 +11,29 @@ TARGET_SEEDS="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 2
 MAX_PARALLEL=10
 JAVA_HEAP="2g"
 LOGDIR="$PROJ/logs"
-TOTAL_CONDITIONS=76
+
+# agent parameter sweep
+MU_VALUES="0.5 0.6 0.7 0.8 0.9"
+EPS_VALUES="0.1 0.3 0.5 0.7 0.9"
+
+# HolmeKim: 4 pt × 25 = 100
+# LFR/CNNR/WS/ER/DCSBM: 3 × 25 = 75 each
+TOTAL_CONDITIONS=125
 PROGRESS_DIR="$PROJ/progress"
 
 # ── progress state init ───────────────────────────────────────────────────────
-rm -rf "$PROGRESS_DIR"
 mkdir -p "$PROGRESS_DIR/seeds"
-date +%s > "$PROGRESS_DIR/start_time.txt"
-echo "0"          > "$PROGRESS_DIR/completed.txt"
+if [[ -f "$PROGRESS_DIR/completed.txt" ]] && [[ "$(cat "$PROGRESS_DIR/completed.txt")" -gt 0 ]]; then
+    RESUME_FROM=$(cat "$PROGRESS_DIR/completed.txt")
+    echo "=== Resuming from condition $((RESUME_FROM + 1))/${TOTAL_CONDITIONS} ==="
+else
+    RESUME_FROM=0
+    date +%s > "$PROGRESS_DIR/start_time.txt"
+    echo "0" > "$PROGRESS_DIR/completed.txt"
+fi
 echo "Starting…"  > "$PROGRESS_DIR/current.txt"
 echo "$TOTAL_CONDITIONS" > "$PROGRESS_DIR/total.txt"
-export PROGRESS_DIR
+export PROGRESS_DIR RESUME_FROM
 
 # ── compile once ─────────────────────────────────────────────────────────────
 echo "=== Compiling Java sources ==="
@@ -46,15 +58,18 @@ run_one() {
 export -f run_one
 export LIBCP JAVA_HEAP LOGDIR PROGRESS_DIR
 
-# Write config.yaml from key=value pairs.
-# Usage: write_config TOPOLOGY [key=val ...]
+# Write config.yaml.
+# Usage: write_config TOPOLOGY MU EPSILON_S [key=val ...]
 write_config() {
-    local topology="$1"; shift
-    python3 - "$topology" "$@" <<'PYEOF'
+    local topology="$1" mu="$2" epsilon_s="$3"
+    shift 3
+    python3 - "$topology" "$mu" "$epsilon_s" "$@" <<'PYEOF'
 import sys, yaml
 topology = sys.argv[1]
+mu = float(sys.argv[2])
+epsilon_s = float(sys.argv[3])
 params = {}
-for kv in sys.argv[2:]:
+for kv in sys.argv[4:]:
     k, v = kv.split('=', 1)
     try:    v = int(v)
     except:
@@ -64,9 +79,8 @@ for kv in sys.argv[2:]:
 cfg = {
     'topology': topology,
     'network_params': params,
-    'N': 1000, 'mu': 0.5, 'epsilon_s': 0.5,
-    'delta_p': 0.1, 'delta_bc': 0.01, 'opinion_std': 0.6,
-    'start_seed': 0, 'end_seed': 99, 'num_seed': 50, 'target_opinion': 1.0,
+    'mu': mu,
+    'epsilon_s': epsilon_s,
 }
 with open('config.yaml', 'w') as f:
     yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
@@ -74,14 +88,16 @@ PYEOF
 }
 
 # Run one full condition (simulate + save).
-# Usage: run_condition CONDITION_NUM LABEL
 run_condition() {
     local cnum="$1" label="$2"
+    if [[ $cnum -le $RESUME_FROM ]]; then
+        echo "  [SKIP] ${cnum}/${TOTAL_CONDITIONS}  $label"
+        return 0
+    fi
     echo "------------------------------------------------------"
     echo "  ${cnum}/${TOTAL_CONDITIONS}  $label"
     echo "------------------------------------------------------"
 
-    # progress state: clear per-condition seed markers, write current label
     rm -f "$PROGRESS_DIR/seeds/"*.done 2>/dev/null || true
     echo "${cnum}/${TOTAL_CONDITIONS}  ${label}" > "$PROGRESS_DIR/current.txt"
 
@@ -108,125 +124,61 @@ run_condition() {
 CONDITION=0
 
 # ══════════════════════════════════════════════════════════════════════════════
-# HolmeKim  — vary m (degree) × pt (clustering)
-# baseline: m=3, A=1, pt=0.3
+# HolmeKim  — pt=0.0,0.1,0.2,0.3  (m=3, A=1 fixed)
+# pt=0.0 is equivalent to DMS (no triangle closing)
 # ══════════════════════════════════════════════════════════════════════════════
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║  HolmeKim  (m × pt grid)                            ║"
+echo "║  HolmeKim  (pt sweep × mu × epsilon_s)              ║"
 echo "╚══════════════════════════════════════════════════════╝"
-for m in 2 3 4; do
-    for pt in 0.1 0.3 0.5; do
-        CONDITION=$((CONDITION+1))
-        write_config "HolmeKim" "m=$m" "A=1" "pt=$pt"
-        run_condition "${CONDITION}" "HolmeKim m=${m} A=1 pt=${pt}"
+for mu in $MU_VALUES; do
+    for epsilon_s in $EPS_VALUES; do
+        for pt in 0.0 0.3; do
+            CONDITION=$((CONDITION+1))
+            write_config "HolmeKim" "$mu" "$epsilon_s" "m=3" "A=1" "pt=$pt"
+            run_condition "${CONDITION}" "HK pt=${pt} mu=${mu} eps=${epsilon_s}"
+        done
     done
 done
 
 # ══════════════════════════════════════════════════════════════════════════════
-# LFR  — vary avg_degree × mu (community mixing)
-# baseline: avg_degree=3, mu=0.1
+# CNNR  — p=0.1,0.3,0.5  (r=0.01 fixed)
 # ══════════════════════════════════════════════════════════════════════════════
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║  LFR  (avg_degree × mu grid)                        ║"
+echo "║  CNNR  (p sweep × mu × epsilon_s)                   ║"
 echo "╚══════════════════════════════════════════════════════╝"
-for avg_degree in 3 5; do
-    for mu in 0.1 0.2 0.3 0.4 0.5; do
+for mu in $MU_VALUES; do
+    for epsilon_s in $EPS_VALUES; do
         CONDITION=$((CONDITION+1))
-        write_config "LFR" \
-            "avg_degree=$avg_degree" "max_degree=50" \
-            "mu=$mu" "gamma=2.5" "beta=1.5" "min_comm=50" "max_comm=250"
-        run_condition "${CONDITION}" "LFR avg_degree=${avg_degree} mu=${mu}"
+        write_config "CNNR" "$mu" "$epsilon_s" "p=0.3" "r=0.01"
+        run_condition "${CONDITION}" "CNNR p=0.3 mu=${mu} eps=${epsilon_s}"
     done
 done
 
 # ══════════════════════════════════════════════════════════════════════════════
-# DMS  — vary m × A
-# baseline: m=3, A=2
+# WS  — beta=0.01,0.1,0.5  (K=4 fixed)
 # ══════════════════════════════════════════════════════════════════════════════
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║  DMS  (m × A grid)                                  ║"
+echo "║  WS  (beta sweep × mu × epsilon_s)                  ║"
 echo "╚══════════════════════════════════════════════════════╝"
-for m in 2 3 4; do
-    for A in 1 2 3; do
+for mu in $MU_VALUES; do
+    for epsilon_s in $EPS_VALUES; do
         CONDITION=$((CONDITION+1))
-        write_config "DMS" "m=$m" "A=$A"
-        run_condition "${CONDITION}" "DMS m=${m} A=${A}"
+        write_config "WS" "$mu" "$epsilon_s" "K=4" "beta=0.1"
+        run_condition "${CONDITION}" "WS beta=0.1 mu=${mu} eps=${epsilon_s}"
     done
 done
 
 # ══════════════════════════════════════════════════════════════════════════════
-# BA  — vary m (scale-free degree)
-# baseline: m=3
+# ER  — p=0.002,0.004,0.008
 # ══════════════════════════════════════════════════════════════════════════════
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║  BA  (m sweep)                                      ║"
+echo "║  ER  (p sweep × mu × epsilon_s)                     ║"
 echo "╚══════════════════════════════════════════════════════╝"
-for m in 1 2 3 4 5 6 7 8 9 10; do
-    CONDITION=$((CONDITION+1))
-    write_config "BA" "m=$m"
-    run_condition "${CONDITION}" "BA m=${m}"
-done
-
-# ══════════════════════════════════════════════════════════════════════════════
-# CNNR  — vary p × r
-# baseline: p=0.3, r=0.01
-# ══════════════════════════════════════════════════════════════════════════════
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  CNNR  (p × r grid)                                 ║"
-echo "╚══════════════════════════════════════════════════════╝"
-for p in 0.1 0.3 0.5; do
-    for r in 0.001 0.01 0.1; do
+for mu in $MU_VALUES; do
+    for epsilon_s in $EPS_VALUES; do
         CONDITION=$((CONDITION+1))
-        write_config "CNNR" "p=$p" "r=$r"
-        run_condition "${CONDITION}" "CNNR p=${p} r=${r}"
-    done
-done
-
-# ══════════════════════════════════════════════════════════════════════════════
-# WS  — vary K × beta (rewiring)
-# baseline: K=4, beta=0.1
-# ══════════════════════════════════════════════════════════════════════════════
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  WS  (K × beta grid)                                ║"
-echo "╚══════════════════════════════════════════════════════╝"
-for K in 2 4; do
-    for beta in 0.01 0.05 0.1 0.3 0.5; do
-        CONDITION=$((CONDITION+1))
-        write_config "WS" "K=$K" "beta=$beta"
-        run_condition "${CONDITION}" "WS K=${K} beta=${beta}"
-    done
-done
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ER  — vary p (≈ avg degree = p × 999)
-# baseline: p=0.003  (avg_degree ≈ 3)
-# ══════════════════════════════════════════════════════════════════════════════
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  ER  (p / avg_degree sweep)                         ║"
-echo "╚══════════════════════════════════════════════════════╝"
-for p in 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.010 0.015; do
-    CONDITION=$((CONDITION+1))
-    write_config "ER" "p=$p"
-    run_condition "${CONDITION}" "ER p=${p}"
-done
-
-# ══════════════════════════════════════════════════════════════════════════════
-# DCSBM  — vary num_communities × p_in  (p_out = p_in / 4, avg_degree fixed)
-# baseline: K=6, p_in=0.03, p_out=0.008
-# ══════════════════════════════════════════════════════════════════════════════
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  DCSBM  (num_communities × p_in grid)               ║"
-echo "╚══════════════════════════════════════════════════════╝"
-# p_out = p_in / 4  (keeps community-separation ratio constant)
-declare -A POUT=( ["0.02"]="0.005" ["0.03"]="0.008" ["0.05"]="0.012" )
-for K in 4 6 8; do
-    for p_in in 0.02 0.03 0.05; do
-        p_out="${POUT[$p_in]}"
-        CONDITION=$((CONDITION+1))
-        write_config "DCSBM" \
-            "num_communities=$K" "p_in=$p_in" "p_out=$p_out" \
-            "gamma=2.3" "avg_degree=5"
-        run_condition "${CONDITION}" "DCSBM K=${K} p_in=${p_in} p_out=${p_out}"
+        write_config "ER" "$mu" "$epsilon_s" "p=0.003"
+        run_condition "${CONDITION}" "ER p=0.003 mu=${mu} eps=${epsilon_s}"
     done
 done
 

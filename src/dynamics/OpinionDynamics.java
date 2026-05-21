@@ -91,6 +91,12 @@ public class OpinionDynamics {
             }
         }
 
+        if (cfg != null) {
+            Const.INITIAL_STUBBORNNESS = cfg.getTopDouble("mu", Const.INITIAL_STUBBORNNESS);
+            Const.OPINION_PREVALENCE   = cfg.getTopDouble("epsilon_s", Const.OPINION_PREVALENCE);
+            System.out.println("[CONFIG] mu=" + Const.INITIAL_STUBBORNNESS + " epsilon_s=" + Const.OPINION_PREVALENCE);
+        }
+
         this.network.makeNetwork(agentSet);
         System.out.println("finish making network");
     }

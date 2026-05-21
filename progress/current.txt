@@ -1,1 +1,1 @@
-1/76  HolmeKim m=2 A=1 pt=0.1
+35/125  HK pt=0.0 mu=0.8 eps=0.5

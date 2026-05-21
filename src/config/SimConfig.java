@@ -8,9 +8,11 @@ public class SimConfig {
 
     public final String topology;
     public final Map<String, String> networkParams;
+    public final Map<String, String> topLevelParams;
 
     public SimConfig(String path) throws IOException {
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, String> netParams = new LinkedHashMap<>();
+        Map<String, String> topParams = new LinkedHashMap<>();
         String topo = "HolmeKim";
         boolean inNetworkParams = false;
 
@@ -28,7 +30,7 @@ public class SimConfig {
                         String key = trimmed.substring(0, colon).trim();
                         String val = trimmed.substring(colon + 1).trim()
                                            .replace("\"", "").replace("'", "");
-                        if (!val.isEmpty()) params.put(key, val);
+                        if (!val.isEmpty()) netParams.put(key, val);
                     }
                 } else {
                     inNetworkParams = false;
@@ -41,12 +43,15 @@ public class SimConfig {
                         topo = val;
                     } else if (key.equals("network_params") && val.isEmpty()) {
                         inNetworkParams = true;
+                    } else if (!val.isEmpty()) {
+                        topParams.put(key, val);
                     }
                 }
             }
         }
         this.topology = topo;
-        this.networkParams = Collections.unmodifiableMap(params);
+        this.networkParams = Collections.unmodifiableMap(netParams);
+        this.topLevelParams = Collections.unmodifiableMap(topParams);
     }
 
     public int getInt(String key, int def) {
@@ -56,6 +61,11 @@ public class SimConfig {
 
     public double getDouble(String key, double def) {
         String v = networkParams.get(key);
+        return v != null ? Double.parseDouble(v.trim()) : def;
+    }
+
+    public double getTopDouble(String key, double def) {
+        String v = topLevelParams.get(key);
         return v != null ? Double.parseDouble(v.trim()) : def;
     }
 }
