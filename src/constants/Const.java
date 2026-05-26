@@ -55,7 +55,9 @@ public class Const {
     "feedPostOpinionMean_0", "feedPostOpinionMean_1", "feedPostOpinionMean_2", "feedPostOpinionMean_3", "feedPostOpinionMean_4", "feedPostOpinionVar_0",
     "feedPostOpinionVar_1", "feedPostOpinionVar_2", "feedPostOpinionVar_3", "feedPostOpinionVar_4",
     "cRateMean_0", "cRateMean_1", "cRateMean_2", "cRateMean_3", "cRateMean_4", "cRateVar_0", "cRateVar_1", "cRateVar_2", "cRateVar_3", "cRateVar_4", 
-    "highComfortRateNum_0", "highComfortRateNum_1", "highComfortRateNum_2", "highComfortRateNum_3", "highComfortRateNum_4"};
+    "highComfortRateNum_0", "highComfortRateNum_1", "highComfortRateNum_2", "highComfortRateNum_3", "highComfortRateNum_4",
+        "postProbMean_0", "postProbMean_1", "postProbMean_2", "postProbMean_3", "postProbMean_4",
+        "targetUnfollow_0", "targetUnfollow_1", "targetUnfollow_2", "targetUnfollow_3", "targetUnfollow_4"};
     public static String RESULT_FOLDER_PATH = "results";
     public static final int NUM_OF_BINS_OF_POSTS = 5; // % of bins of opinions in posts for analysis
     public static final int NUM_OF_BINS_OF_OPINION = NUM_OF_BINS_OF_POSTS;

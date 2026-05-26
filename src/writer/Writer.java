@@ -28,6 +28,8 @@ public class Writer {
     private double[] cRateMeanArray;
     private double[] cRateVarArray;
     private double[] highComfortRateNumArray;
+    private double[] postProbMeanArray;
+    private int[] targetUnfollowArray;
 
     private static final int BATCH_SIZE = 1000;
     private int batchStartStep = 0;
@@ -54,6 +56,8 @@ public class Writer {
         this.cRateMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
         this.cRateVarArray = new double[Const.NUM_OF_BINS_OF_OPINION];
         this.highComfortRateNumArray = new double[Const.NUM_OF_BINS_OF_OPINION];
+        this.postProbMeanArray = new double[Const.NUM_OF_BINS_OF_OPINION];
+        this.targetUnfollowArray = new int[Const.NUM_OF_BINS_OF_OPINION];
     }
 
     // Setter
@@ -101,6 +105,14 @@ public class Writer {
 
     public void setHighComfortRateNumArray(double[] original) {
         this.highComfortRateNumArray = original.clone();
+    }
+
+    public void setPostProbMeanArray(double[] original) {
+        this.postProbMeanArray = original.clone();
+    }
+
+    public void setTargetUnfollowArray(int[] original) {
+        this.targetUnfollowArray = original.clone();
     }
 
     public void setShannonIndex(double value) {
@@ -167,6 +179,8 @@ public class Writer {
                             case "cRateMean" -> metricsBuf.append(String.format("%.4f", this.cRateMeanArray[index]));
                             case "cRateVar" -> metricsBuf.append(String.format("%.4f", this.cRateVarArray[index]));
                             case "highComfortRateNum" -> metricsBuf.append(String.format("%.4f", this.highComfortRateNumArray[index]));
+                            case "postProbMean" -> metricsBuf.append(String.format("%.6f", this.postProbMeanArray[index]));
+                            case "targetUnfollow" -> metricsBuf.append(this.targetUnfollowArray[index]);
                             default -> metricsBuf.append("");
                         }
                     } else {

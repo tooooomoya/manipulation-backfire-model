@@ -1,0 +1,22 @@
+# network topology
+topology: "HK"          # "ER", "BA", "CNNR", "HK", "WS", "DMS"
+
+# network parameters
+network_params:
+  m: 3
+  A: 1
+  pt: 0.2
+
+# simulation parameters
+N: 1000
+# mu: 0.5           # stubbornness in social influence
+# epsilon_s: 0.8    # opinion prevalence 
+# delta_p: 0.1
+# delta_bc: 0.01
+# opinion_std: 0.6  # standard deviation of initial opinions
+
+manipulation_params:
+  starting_step: 20000
+  opinion_change_rate: 0.001
+  starting_opinion_abs: 0.0
+  stopping_opinion_abs: 1.0

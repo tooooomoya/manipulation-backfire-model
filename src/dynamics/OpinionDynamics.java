@@ -53,17 +53,21 @@ public class OpinionDynamics {
     private void setNetwork() {
         ///// you can change the initial network bellow
         // this.network = new RandomNetwork(agentNum, connectionProbability);
-        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+        this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.2);
         // this.network = new WattsStrogatzNetwork(agentNum, 4, 0.1);
         // this.network = new DMSNetwork(agentNum, 3, 2);
-        // this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
+
+        //this.network = new ConnectingNearestNeighborNetwork(agentNum, 0.3, 0.01);
         // this.network = new BarabasiAlbertNetwork(agentNum, 3);
+        
         // LFR benchmark: (size, avgDegree, maxDegree, mu, gamma, beta, minComm, maxComm)
-        // this.network = new LFRNetwork(agentNum, 10, 50, 0.2, 2.5, 1.5, 10, 50);
+        //this.network = new LFRNetwork(agentNum, 3, 50, 0.1, 2.5, 1.5, 50, 250);
+        
         // DC-SBM: (size, numCommunities, pIn, pOut, gamma, targetAvgDegree)
-        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10);
+        //this.network = new DCSBMNetwork(agentNum, 6, 0.03, 0.008, 2.3, 5);
+        
         // DC-SBM full: (..., OutDegreeMode, balancedCommunities, outSigma, outShape)
-        // this.network = new DCSBMNetwork(agentNum, 4, 0.08, 0.002, 2.3, 10, DCSBMNetwork.OutDegreeMode.LOGNORMAL, false, 0.3, 10.0);
+        //this.network = new DCSBMNetwork(agentNum, 6, 0.03, 0.008, 2.3, 5, DCSBMNetwork.OutDegreeMode.LOGNORMAL, false, 0.3, 10.0);
         /////
 
         this.network.makeNetwork(agentSet);
@@ -124,11 +128,14 @@ public class OpinionDynamics {
 
         int followActionNum;
         int unfollowActionNum;
+        int[] targetUnfollowByClass = new int[Const.NUM_OF_BINS_OF_OPINION];
+        boolean earlyStop = false;
 
         for (int step = 1; step <= t; step++) {
             if(step % 1000 == 0) System.out.println("step = " + step);
             followActionNum = 0;
             unfollowActionNum = 0;
+            Arrays.fill(targetUnfollowByClass, 0);
 
             analyzer.clearPostCash();
             analyzer.resetFeedMap();
@@ -142,6 +149,9 @@ public class OpinionDynamics {
             if (step == 20000) {
                 List<Integer> targetUsers = expIntervention.getManipulationTarget(agentSet, admin.getAdjacencyMatrix(), Const.NUM_MANIPULATION_TARGETS);
                 System.out.println("Target users for manipulation: " + targetUsers);
+                if (targetUsers.isEmpty()) {
+                    earlyStop = true;
+                }
                 for (int userId : targetUsers) {
                     agentSet[userId].setTarget();
                 }
@@ -160,7 +170,7 @@ public class OpinionDynamics {
 
                 // admin sets user's feed
                 admin.AdminFeedback(agentId, agentSet);
-                analyzer.setFeedMap(agent);
+                if (!agent.getTarget()) analyzer.setFeedMap(agent);
                 agent.updatePostProb();
 
                 /////// repost (like)
@@ -185,8 +195,10 @@ public class OpinionDynamics {
                     for (int followerId : admin.getFollowers(agentId)) {
                         agentSet[followerId].addToPostCash(post);
                     }
-                    writer.setPostBins(post);
-                    analyzer.setPostCash(post);
+                    if (!agent.getTarget()) {
+                        writer.setPostBins(post);
+                        analyzer.setPostCash(post);
+                    }
                     postList.add(post);
                 }
 
@@ -196,7 +208,17 @@ public class OpinionDynamics {
                 agent.resetFeed();
 
                 if (followedIds[0] >= 0) { followActionNum++; }
-                if (unfollowedId >= 0) { unfollowActionNum++; }
+                if (followedIds[1] >= 0) { 
+                    if (agentSet[followedIds[1]].getTarget()) {
+                        targetUnfollowByClass[agent.getOpinionClass()]++;
+                    }
+                }
+                if (unfollowedId >= 0) { 
+                    unfollowActionNum++; 
+                    if (agentSet[unfollowedId].getTarget()) {
+                        targetUnfollowByClass[agent.getOpinionClass()]++;
+                    }
+                }
             }
 
             // step-level invariant check: once per step, not per agent
@@ -231,7 +253,15 @@ public class OpinionDynamics {
             writer.setCRateVarArray(analyzer.getCRateVarArray());
             analyzer.computeHighComfortRateNumArray(agentSet);
             writer.setHighComfortRateNumArray(analyzer.getHighComfortRateNumArray());
+            analyzer.computePostProbMeanArray(agentSet);
+            writer.setPostProbMeanArray(analyzer.getPostProbMeanArray());
+            writer.setTargetUnfollowArray(targetUnfollowByClass);
             writer.write();
+
+            if (earlyStop) {
+                System.out.println("[STOP] No manipulation target found; halting simulation at step " + step + ".");
+                break;
+            }
         }
 
         writer.flush(); // flush final partial batch

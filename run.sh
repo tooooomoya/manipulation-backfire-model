@@ -39,6 +39,7 @@ LOGDIR="logs"
 
 mkdir -p "$LOGDIR"
 rm -f "$LOGDIR"/*.log
+rm -rf results/run_*
 
 SEED_COUNT=$(echo $TARGET_SEEDS | wc -w)
 TOTAL_RUNS=$((SEED_COUNT * 2))
