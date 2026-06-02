@@ -1,5 +1,7 @@
-topology: ER
+topology: HolmeKim
 network_params:
-  p: 0.003
-mu: 0.9
-epsilon_s: 0.3
+  m: 3
+  A: 1
+  pt: 0.0
+mu: 0.8
+epsilon_s: 0.7
