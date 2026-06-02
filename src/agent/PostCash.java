@@ -1,7 +1,5 @@
 package agent;
 
-import rand.randomGenerator;
-
 public class PostCash {
     private int maxNumOfPostCash;
     private Post[] postQueue;
@@ -19,16 +17,6 @@ public class PostCash {
         }
         size = 0;
     }
-
-    public void shuffle() {
-        for (int i = size - 1; i > 0; i--) {
-            int j = randomGenerator.get().nextInt(i + 1);
-            Post temp = postQueue[i];
-            postQueue[i] = postQueue[j];
-            postQueue[j] = temp;
-        }
-    }
-    
 
     public void addPost(Post post) {
         if (size < maxNumOfPostCash) {

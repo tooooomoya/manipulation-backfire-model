@@ -211,10 +211,6 @@ public class Agent {
         this.feed.clear();
     }
 
-    public void shufflePostCash(){
-        this.postCash.shuffle();
-    }
-
     public void updatePostProb() {
         // post prob is set based on the marginal utility theory
         double increment = Const.MU_PARAM * Math.log(this.recievedLikeCount + 1);
@@ -272,9 +268,9 @@ public class Agent {
 
         if (this.target) {
 
-            int TARGET_SHIFT_STEPS = 20000;
-            double TARGET_TOTAL_SHIFT = 0.2;
-            double delta = TARGET_TOTAL_SHIFT / TARGET_SHIFT_STEPS;
+            int TARGET_SHIFT_STEPS = 10000;
+            double TARGET_TOTAL_SHIFT = 1.0;
+            double delta = TARGET_TOTAL_SHIFT / (TARGET_SHIFT_STEPS * Const.INITIAL_PU);
 
             this.opinion += delta * Const.TARGET_DIRECTION;
 
@@ -290,6 +286,7 @@ public class Agent {
             }
 
             this.postProb = Const.MAX_PP;
+            this.repostProb = 0.0;
 
         } else if (postNum > 0) {
 
