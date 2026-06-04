@@ -2,6 +2,13 @@ topology: HolmeKim
 network_params:
   m: 3
   A: 1
-  pt: 0.0
-mu: 0.8
-epsilon_s: 0.7
+  pt: 0.3
+mu: 0.7
+epsilon_s: 0.5
+
+# topology: CNNR
+# network_params:
+#   p: 0.3
+#   r: 0.01
+# mu: 0.7
+# epsilon_s: 0.5
