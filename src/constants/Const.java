@@ -22,7 +22,7 @@ public class Const {
     public static final double REPOST_PROB = 0.25;
     public static final double POST_COST = 0.0;
     public static final double MU_PARAM = 0.01; // Marginal Utility log func parameter
-    public static final double OPINION_PREVALENCE = 0.5;
+    public static final double OPINION_PREVALENCE = 0.2;
     public static final double INITIAL_OPINION_STD = 0.6;
     public static final double MAX_FOLLOW_CAPACITY = 10;
     public static final double BC_DEC_RATE = 0.99;  // bc only decays; no recovery
