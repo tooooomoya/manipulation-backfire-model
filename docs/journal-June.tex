@@ -764,14 +764,22 @@ the dynamic bounded-confidence and unfollowing mechanisms in generating
 realistic levels of within-group information sharing.
 
 \noindent\textbf{SF3: Echo chamber depth.}
-The fraction of users whose information diet is dominated by 
-ideologically aligned sources ranges from approximately 55--65\% 
-on Twitter~\cite{Barberá2015, Cinelli2021}. 
-Our model yields a median within-group comfort rate (echo chamber depth) 
-of $64.3\%$ (IQR $[57.7\%, 70.1\%]$), which falls within this empirical range. 
-This confirms that the model produces partial echo chambers 
-for extreme-opinion agents consistent with real 
-soacial media behavior, rather than complete segregation.
+Politically engaged users inhabit \emph{partial} echo chambers: a
+majority---but not the entirety---of their information diet is
+ideologically aligned. Cinelli et al.~\cite{Cinelli2021} show that on
+Twitter a user's leaning is strongly correlated with the average leaning of
+their network neighborhood, while Bakshy et al.~\cite{Bakshy2015} find that
+only about $28.5\%$ of the hard-news content in a user's feed is
+cross-cutting---i.e.\ roughly $70\%$ is ideologically aligned---and the
+partisan retweet communities of Conover et al.~\cite{Conover2011} are
+$80$--$93\%$ homogeneous. Substantial cross-ideological exposure nonetheless
+persists, so the regime is one of partial, not complete, segregation.
+We operationalize echo chamber depth as the within-group comfort rate
+(the aligned fraction of the feed) for extreme-opinion agents.
+Our model yields a median of $64.3\%$ (IQR $[57.7\%, 70.1\%]$): a
+majority-aligned diet that remains below the $\approx\!70\%$ exposure
+benchmark, reproducing partial echo chambers for partisan agents rather
+than total isolation.
 
 The model reproduces all three stylized facts in the pre-manipulation
 equilibrium, providing qualitative empirical credibility for its
