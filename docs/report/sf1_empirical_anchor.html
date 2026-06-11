@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF1 Empirical Anchor — Technical Report</title>
+<style>
+  :root{
+    --fg:#1a1a1a; --muted:#5b6470; --line:#e2e6eb; --bg:#ffffff;
+    --accent:#2563eb; --accent2:#0d9488; --warn:#b45309; --bad:#b91c1c;
+    --code-bg:#f6f8fa; --good:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);background:#f3f5f7;
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP",sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 28px 96px;background:var(--bg);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:21px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:28px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 4px}
+  p{margin:12px 0}
+  code{font-family:"SF Mono", "JetBrains Mono",Menlo,Consolas,monospace;font-size:13.5px;
+    background:var(--code-bg);padding:1.5px 5px;border-radius:4px}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+    vertical-align:middle;letter-spacing:.03em}
+  .tag.bad{background:#fde8e8;color:var(--bad)}
+  .tag.good{background:#dcfce7;color:var(--good)}
+  .tag.warn{background:#fef3c7;color:var(--warn)}
+  .callout{border-left:4px solid var(--accent);background:#f0f6ff;padding:12px 16px;
+    margin:18px 0;border-radius:0 8px 8px 0}
+  .callout.warn{border-color:var(--warn);background:#fffbeb}
+  .callout.good{border-color:var(--good);background:#f0fdf4}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--muted);
+    margin:14px 0 30px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .meta b{color:var(--fg);font-weight:600}
+  .formula{text-align:center;font-size:18px;margin:18px 0;font-family:Georgia,serif}
+  .small{font-size:13px;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .chart{margin:20px 0}
+  .footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--muted)}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:5px 0}
+  .eq{font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Re-anchoring Stylized Fact&nbsp;1 (Apparent Polarization) to Empirical Posting-Rate Data</h1>
+<p class="sub">Technical report — derivation, data, and reproduction</p>
+
+<div class="meta">
+  <span><b>Manuscript</b> Manipulating Moderate Hubs in Social Networks</span>
+  <span><b>Section</b> 3.2 / SF1</span>
+  <span><b>Date</b> 2026-06-11</span>
+  <span><b>Author</b> T. Takeda</span>
+</div>
+
+<p>This report documents why the empirical anchor for <b>SF1 (apparent polarization)</b> was changed,
+how the new target <code>[1.19, 1.26]</code> was computed from raw account-level data, and how to reproduce it.
+It is meant to make the chain of reasoning fully auditable after the fact.</p>
+
+<h2>1. The problem with the original anchor</h2>
+
+<p>The submitted draft operationalized SF1 as the ratio of <em>observable post-content variance</em>
+to <em>underlying opinion variance</em>,</p>
+
+<div class="formula"><span class="eq">R = &#963;<sup>2</sup><sub>post</sub> / &#963;<sup>2</sup><sub>opinion</sub></span></div>
+
+<p>and validated the model's value (<code>1.232</code>) against a target of <code>[1.10, 1.25]</code>,
+citing <b>Eady et al. (2019)</b> and <b>Barberá et al. (2015)</b>. Auditing those citations revealed a
+<b>construct mismatch</b>:</p>
+
+<table>
+  <tr><th>What the citation actually measures</th><th>What SF1 needs</th></tr>
+  <tr>
+    <td><b>Eady (2019):</b> standard deviation of the <em>ideology of accounts a user is exposed to</em>
+        — 0.87 (via retweets) vs. 0.78 (direct follows). This is a <em>network-exposure</em> quantity about
+        <em>which accounts</em> are seen.</td>
+    <td>Variance of the <em>content a user posts</em> relative to that user's <em>own latent opinion</em>
+        — a within-/between-author <em>production</em> quantity.</td>
+  </tr>
+</table>
+
+<div class="callout warn">
+  <b>Verdict:</b> Eady's 0.87/0.78 measures exposure composition, not post-vs-opinion dispersion.
+  The <code>[1.10, 1.25]</code> target had <b>no traceable source</b> in either cited paper —
+  the <code>0.87/0.78 = 1.12 &#8594; 1.12&sup2; &#8776; 1.25</code> conversion in the validation notebook
+  silently equated two different constructs. <span class="tag bad">NOT DEFENSIBLE</span>
+</div>
+
+<h2>2. The correct construct: posting rate by ideological extremity</h2>
+
+<p>The model represents an information space sliced by a single salient issue (a "hashtag" space).
+On such a slice, SF1 is generated by one mechanism: <b>users with more extreme opinions post more often</b>,
+so the distribution of <em>posts</em> over opinion is more dispersed than the distribution of <em>users</em>
+over opinion. The right empirical comparand is therefore a <b>posting-rate-by-ideology</b> measurement,
+not an exposure measurement.</p>
+
+<p>We found a direct, public source for exactly this:</p>
+
+<div class="callout">
+  <b>Buntain &#38; Snegovaya (2025)</b>, <i>"Post-January 6 deplatforming shows long-term effects on
+  ideological polarization among Twitter users"</i>, <i>PNAS Nexus</i> 4(11), pgaf333.<br>
+  Reported (Fig. 2): hyper-partisan accounts ("Very Liberal" / "Very Conservative") post
+  <b>about twice as often</b> as moderates.<br>
+  Public data: OSF <a href="https://doi.org/10.17605/OSF.IO/KQFM6">10.17605/OSF.IO/KQFM6</a> &mdash;
+  anonymized account-level daily post counts (<code>_anon_data/twitter.2020to2021.matched.counts.parquet</code>)
+  joined to self-reported ideological lean (<code>tw_handle_to_libcon.csv</code>).
+</div>
+
+<h2>3. Method</h2>
+
+<p>Let each surveyed user have a self-reported lean <span class="eq">x &#8712; {&#8722;3,&#8230;,+3}</span>
+(7 categories). Each post is assumed to carry its author's lean. Then:</p>
+
+<ul>
+  <li><span class="eq">&#963;<sup>2</sup><sub>opinion</sub></span> = variance of <span class="eq">x</span>
+      weighted by the <b>number of users</b> at each position (the opinion-holder distribution).</li>
+  <li><span class="eq">&#963;<sup>2</sup><sub>post</sub></span> = variance of <span class="eq">x</span>
+      weighted by the <b>number of posts</b> contributed at each position (the observable-content distribution).</li>
+  <li><span class="eq">R = &#963;<sup>2</sup><sub>post</sub> / &#963;<sup>2</sup><sub>opinion</sub></span>.</li>
+</ul>
+
+<p class="small">The ratio is invariant to any affine rescaling of the opinion axis, so the specific
+<code>[&#8722;3,+3]</code> coding does not affect <span class="eq">R</span>; it assumes only that the seven
+categories are approximately equally spaced.</p>
+
+<h2>4. Data: posting rate per ideological bin</h2>
+
+<p>Matched Twitter sample, <code>n = 762</code> accounts, <code>~1.96M</code> posts over 2020–2022.
+Per-account mean daily posting rate by self-reported lean (full period):</p>
+
+<div class="chart">
+<svg viewBox="0 0 640 280" width="100%" role="img" aria-label="Posting rate by ideological bin">
+  <!-- baseline -->
+  <line x1="60" y1="240" x2="620" y2="240" stroke="#cbd2da" stroke-width="1"/>
+  <!-- y ticks -->
+  <g font-size="11" fill="#5b6470" font-family="monospace">
+    <text x="52" y="244" text-anchor="end">0</text>
+    <text x="52" y="244" text-anchor="end"></text>
+    <text x="52" y="176" text-anchor="end">2</text>
+    <text x="52" y="108" text-anchor="end">4</text>
+    <text x="52" y="40"  text-anchor="end">6</text>
+    <text x="18" y="150" transform="rotate(-90 18 150)" text-anchor="middle" fill="#1a1a1a">posts / day / account</text>
+  </g>
+  <line x1="60" y1="172" x2="620" y2="172" stroke="#eef1f4"/>
+  <line x1="60" y1="104" x2="620" y2="104" stroke="#eef1f4"/>
+  <line x1="60" y1="36"  x2="620" y2="36"  stroke="#eef1f4"/>
+  <!-- bars: scale 34.07 px/unit, baseline y=240 -->
+  <g>
+    <rect x="78"  y="40"  width="48" height="200" fill="#2563eb"/>
+    <rect x="155" y="116" width="48" height="124" fill="#3b76ee"/>
+    <rect x="232" y="170" width="48" height="70"  fill="#6b9bf2"/>
+    <rect x="309" y="141" width="48" height="99"  fill="#94a3b8"/>
+    <rect x="386" y="208" width="48" height="32"  fill="#f0a36b"/>
+    <rect x="463" y="187" width="48" height="53"  fill="#e07b3e"/>
+    <rect x="540" y="67"  width="48" height="173" fill="#c2410c"/>
+  </g>
+  <!-- value labels -->
+  <g font-size="11.5" fill="#1a1a1a" font-family="monospace" text-anchor="middle" font-weight="700">
+    <text x="102" y="32">5.87</text>
+    <text x="179" y="108">3.64</text>
+    <text x="256" y="162">2.04</text>
+    <text x="333" y="133">2.90</text>
+    <text x="410" y="200">0.94</text>
+    <text x="487" y="179">1.57</text>
+    <text x="564" y="59">5.08</text>
+  </g>
+  <!-- x labels -->
+  <g font-size="11" fill="#5b6470" text-anchor="middle">
+    <text x="102" y="256">Very lib</text><text x="102" y="270">(&#8722;3)</text>
+    <text x="179" y="256">Lib</text><text x="179" y="270">(&#8722;2)</text>
+    <text x="256" y="256">Som.lib</text><text x="256" y="270">(&#8722;1)</text>
+    <text x="333" y="256">Middle</text><text x="333" y="270">(0)</text>
+    <text x="410" y="256">Som.con</text><text x="410" y="270">(+1)</text>
+    <text x="487" y="256">Con</text><text x="487" y="270">(+2)</text>
+    <text x="564" y="256">Very con</text><text x="564" y="270">(+3)</text>
+  </g>
+</svg>
+</div>
+
+<p class="small">The U-shape is clear: the two extreme bins (&#177;3) are the most active, the moderate/low-engagement
+bins (&#8722;1, +1) the least. This is the posting-rate gradient that drives apparent polarization.</p>
+
+<h2>5. Results</h2>
+
+<table>
+  <tr>
+    <th>Window</th>
+    <th class="num">extreme&nbsp;(&#177;3)&nbsp;/&nbsp;center&nbsp;(0)</th>
+    <th class="num">&#963;&sup2;<sub>opinion</sub></th>
+    <th class="num">&#963;&sup2;<sub>post</sub></th>
+    <th class="num">R</th>
+  </tr>
+  <tr><td>Full period (2020-01 → 2022-01)</td><td class="num">1.89&#215;</td><td class="num">3.521</td><td class="num">4.196</td><td class="num"><b>1.192</b></td></tr>
+  <tr><td>2020 election (Oct–Nov)</td><td class="num">2.38&#215;</td><td class="num">3.521</td><td class="num">4.425</td><td class="num"><b>1.257</b></td></tr>
+  <tr><td>Jan 2021 (deplatforming)</td><td class="num">2.15&#215;</td><td class="num">3.521</td><td class="num">4.207</td><td class="num"><b>1.195</b></td></tr>
+</table>
+
+<p>The ratio spans <b><code>[1.19, 1.26]</code></b> across contexts, rising toward the upper end during
+high-salience event windows — the same high-attention regime the manipulation scenario represents.</p>
+
+<div class="callout good">
+  <b>Convergence with the model.</b> The model's pre-manipulation equilibrium yields a median ratio of
+  <b>1.232</b> (IQR [1.185, 1.286]), which falls squarely inside the empirically derived
+  <code>[1.19, 1.26]</code> band. <span class="tag good">SF1 PASS</span><br>
+  <span class="small">Note: the empirical ratio captures the <em>between-author</em> composition effect only
+  (extremes post more). If the model additionally amplifies content within authors, the empirical figure
+  is effectively a lower bound on the mechanism.</span>
+</div>
+
+<h2>6. Reproduction</h2>
+
+<p>Download the two OSF files and run:</p>
+
+<pre><code># OSF 10.17605/OSF.IO/KQFM6  (_anon_data)
+#   twitter.2020to2021.matched.counts.parquet  -> tw_counts.parquet
+#   tw_handle_to_libcon.csv                     -> tw_libcon.csv
+
+import pandas as pd, numpy as np
+
+counts = pd.read_parquet('tw_counts.parquet')          # 762 x 737 daily post counts
+lc = pd.read_csv('tw_libcon.csv').set_index('handle')  # handle -> ideological_lean [-3,+3]
+counts = counts.loc[lc.index]
+x = lc['ideological_lean'].values
+
+def wvar(x, w):
+    w = np.asarray(w, float); x = np.asarray(x, float)
+    m = np.sum(w*x)/np.sum(w)
+    return np.sum(w*(x-m)**2)/np.sum(w)
+
+def ratio_for(cols):
+    posts = counts[cols].sum(axis=1).values   # posts per account
+    s2_op   = wvar(x, np.ones_like(posts))    # user-weighted  (opinion holders)
+    s2_post = wvar(x, posts)                  # post-weighted  (observable content)
+    return s2_post / s2_op
+
+allcols = list(counts.columns)
+print("full    :", ratio_for(allcols))                                   # 1.192
+print("election:", ratio_for([c for c in allcols if c[:7] in ('2020-10','2020-11')]))  # 1.257
+print("jan2021 :", ratio_for([c for c in allcols if '2021-01' in c]))    # 1.195
+</code></pre>
+
+<h2>7. Caveats</h2>
+<ul>
+  <li><b>Scale invariance / equal spacing.</b> <span class="eq">R</span> is unaffected by the
+      <code>[&#8722;3,+3]</code> coding but assumes the 7 categories are equally spaced.</li>
+  <li><b>Proxy for latent opinion.</b> Self-reported lean (discrete, 7-point) stands in for the
+      continuous latent opinion the model uses.</li>
+  <li><b>Between-author only.</b> The empirical ratio reflects only that extremes post more; it does not
+      capture any within-author content amplification.</li>
+  <li><b>Single, non-representative sample.</b> The matched sample leans liberal and is not a
+      population-representative panel (authors' own caveat). The band is an order-of-magnitude reference,
+      not a population parameter.</li>
+  <li><b>"~2&#215;" is descriptive.</b> Buntain &#38; Snegovaya's regression shows extremity has a
+      <em>negative</em> baseline association with activity that turns positive only via an event-driven
+      time trend — i.e. the gradient is concentrated in high-salience windows, consistent with our use.</li>
+</ul>
+
+<h2>8. Changes applied</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>docs/journal-June.tex</code></td><td>SF1 paragraph rewritten: citation Eady→<b>BuntainSnegovaya2025</b>; target
+      <code>[1.10,1.25]</code>→<code>[1.19,1.26]</code>; explicit user-/post-weighted definition; scale-invariance &#38; sampling footnote.</td></tr>
+  <tr><td><code>emp-valid/validation.ipynb</code></td><td>SF1 table &#38; <code>sf_data</code> entry re-anchored; activity-gradient
+      anchor switched from Eady "accounts followed" to Buntain posting rates (band <code>[1.9, 2.4]&#215;</code>, notebook-only — not used in main text).</td></tr>
+  <tr><td><code>emp-valid/stylized_facts_comparison.csv</code></td><td>SF1 row synced to the new anchor.</td></tr>
+</table>
+
+<div class="footer">
+  Sources: Buntain &#38; Snegovaya (2025), <i>PNAS Nexus</i> 4(11) pgaf333, data OSF 10.17605/OSF.IO/KQFM6 ·
+  Eady et al. (2019) <i>SAGE Open</i> · Barberá et al. (2015) <i>Psychological Science</i>.<br>
+  Generated as a post-hoc audit trail for the SF1 empirical anchor. Model value 1.232 from the
+  pre-manipulation equilibrium (N=30 baseline runs), recorded in <code>stylized_facts_comparison.csv</code>.
+</div>
+
+</div>
+</body>
+</html>
