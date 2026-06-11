@@ -711,22 +711,25 @@ parameter settings ($\ThofOpPreval = 0.5$, $\Stubbornness = 0.8$, HolmeKim netwo
 The variance in observable post content across users consistently
 exceeds the variance in the underlying opinion distribution,
 because users with more extreme views post disproportionately
-more frequently~\cite{BuntainSnegovaya2025}.
+more frequently~\cite{Buntain2025}.
 We operationalize this as the ratio $\sigma_{\mathrm{post}}^{2} / \sigma_{\mathrm{opinion}}^{2}$,
 where $\sigma_{\mathrm{opinion}}^{2}$ is the opinion variance weighted by the
 number of users at each opinion position (the distribution of opinion holders)
 and $\sigma_{\mathrm{post}}^{2}$ is the same variance weighted by the number of
 posts contributed at each position (the distribution of observable content).
 To anchor this ratio empirically, we recompute it directly from the
-publicly released account-level data of~\cite{BuntainSnegovaya2025}
+publicly released account-level data of~\cite{Buntain2025}
 ($n = 762$ surveyed Twitter/X users with self-reported ideological lean on a
-$[-3, +3]$ scale, contributing $\sim\!1.96$M posts over 2020--2021).\footnote{%
-The ratio is invariant to any affine rescaling of the opinion axis, so the
-specific $[-3,+3]$ coding does not affect its value; it relies only on the
-assumption that the seven self-reported categories are approximately
-equally spaced. As a single-study anchor based on a non-representative,
-liberal-leaning sample, this range should be read as an order-of-magnitude
-reference rather than a population parameter.}
+$[-3, +3]$ scale, contributing $\sim\!1.96$M posts over 2020--2021).
+
+% \footnote{%
+% The ratio is invariant to any affine rescaling of the opinion axis, so the
+% specific $[-3,+3]$ coding does not affect its value; it relies only on the
+% assumption that the seven self-reported categories are approximately
+% equally spaced. As a single-study anchor based on a non-representative,
+% liberal-leaning sample, this range should be read as an order-of-magnitude
+% reference rather than a population parameter.}
+
 In these data, hyper-partisan accounts post roughly two to three times as
 often as moderates, inflating the post-weighted opinion variance relative to
 the user-weighted variance by a factor of $1.19$ over the full period and
@@ -741,13 +744,24 @@ opinion is more dispersed---and thus appears more polarized---than
 the underlying opinion distribution.
 
 \noindent\textbf{SF2: Cross-partisan repost fraction.}
-Retweet and repost networks exhibit strong partisan segregation, 
-with approximately 2--7\% of repost events crossing partisan lines, 
-reflecting strong homophily in information sharing~\cite{Conover2011, HalberstamKnight2016}. 
-Our model yields a median cross-partisan repost fraction of $2.1\%$ (IQR $[0.6\%, 4.3\%]$), 
-which aligns with the empirical lower bound and is consistent with the model's echo-chamber 
-formation dynamics. This result supports the validity of the dynamic bounded-confidence 
-mechanism in generating observed levels of within-group interaction.
+Repost (retweet) networks are strongly segregated along partisan lines:
+cross-partisan reposting is near-zero, far below the rate expected under
+random mixing. Conover et al.~\cite{Conover2011} report a retweet-network
+modularity of $0.48$ (vs.\ $0.17$ for the mention network) and find that
+cross-ideological retweet links occur at only $3$--$5\%$ of their
+randomly-expected frequency, concluding that ideologically opposed users
+``very rarely share information from across the divide.''
+As an upper reference, Wojcieszak et al.~\cite{Wojcieszak2022} find that
+users share content from out-group political elites only about
+one-fourteenth as often as from in-group elites ($\approx 7\%$ of partisan
+shares crossing the divide).
+We operationalize this as the fraction of repost edges crossing the opinion
+midpoint among partisan agents. Our model yields a median cross-partisan
+repost fraction of $2.1\%$ (IQR $[0.6\%, 4.3\%]$), which sits in the
+near-zero regime---below the $\approx 7\%$ upper reference and consistent
+with the strong segregation documented above. This supports the validity of
+the dynamic bounded-confidence and unfollowing mechanisms in generating
+realistic levels of within-group information sharing.
 
 \noindent\textbf{SF3: Echo chamber depth.}
 The fraction of users whose information diet is dominated by 
