@@ -25,12 +25,13 @@ public class Const {
     public static double OPINION_PREVALENCE = 0.5;
     public static final double INITIAL_OPINION_STD = 0.6;
     public static final double MAX_FOLLOW_CAPACITY = 10;
-    public static final double BC_DEC_RATE = 0.99;  // bc only decays; no recovery
+    public static double BC_DEC_RATE = 0.99;  // δ_ε: bc decay rate per uncomfortable post; overridable via config
     public static double INITIAL_STUBBORNNESS = 0.8;
 
     public static final double INITIAL_PP = 0.1; // Prob of Posting
     public static final double MAX_PP = 0.5;
     public static final double MIN_PP = 0.05;
+    public static double DELTA_PP = 0.1;          // δ_ρ: posting-prob adjustment rate; overridable via config
     public static final double INCREMENT_PP = 0.1;
     public static final double DECREMENT_PP = INCREMENT_PP;
 

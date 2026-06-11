@@ -60,7 +60,8 @@ public class OpinionDynamics {
         }
 
         if (cfg == null) {
-            this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+            //this.network = new HolmeKimNetwork(agentNum, 3, 1, 0.3);
+            this.network = new RandomNetwork(agentNum, connectionProbability);
         } else {
             System.out.println("[CONFIG] topology=" + cfg.topology + " params=" + cfg.networkParams);
             switch (cfg.topology) {
@@ -92,9 +93,14 @@ public class OpinionDynamics {
         }
 
         if (cfg != null) {
-            Const.INITIAL_STUBBORNNESS = cfg.getTopDouble("mu", Const.INITIAL_STUBBORNNESS);
-            Const.OPINION_PREVALENCE   = cfg.getTopDouble("epsilon_s", Const.OPINION_PREVALENCE);
-            System.out.println("[CONFIG] mu=" + Const.INITIAL_STUBBORNNESS + " epsilon_s=" + Const.OPINION_PREVALENCE);
+            Const.INITIAL_STUBBORNNESS = cfg.getTopDouble("mu",            Const.INITIAL_STUBBORNNESS);
+            Const.OPINION_PREVALENCE   = cfg.getTopDouble("epsilon_s",     Const.OPINION_PREVALENCE);
+            Const.DELTA_PP             = cfg.getTopDouble("delta_rho",     Const.DELTA_PP);
+            Const.BC_DEC_RATE          = cfg.getTopDouble("delta_epsilon",  Const.BC_DEC_RATE);
+            System.out.println("[CONFIG] mu=" + Const.INITIAL_STUBBORNNESS
+                    + " epsilon_s=" + Const.OPINION_PREVALENCE
+                    + " delta_rho=" + Const.DELTA_PP
+                    + " delta_epsilon=" + Const.BC_DEC_RATE);
         }
 
         this.network.makeNetwork(agentSet);

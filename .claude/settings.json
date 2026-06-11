@@ -17,7 +17,10 @@
       "Bash(python3 -c \"import json; nb=json.load\\(open\\('/home/tomoyatakeda/document/research/manipulation-backfire-model/save-results.ipynb'\\)\\); print\\(len\\(nb['cells']\\), 'cells'\\); [print\\(i, c.get\\('id','?'\\)\\) for i,c in enumerate\\(nb['cells']\\)]\")",
       "Bash(python3 -c \"import pandas as pd; df=pd.read_csv\\('results/summary/CNNR/p_0.3_r_0.01/0896dd90/target_hub_metrics_5000step.csv'\\); print\\(sorted\\(df['step'].unique\\(\\)\\)\\)\")",
       "Bash(python3 -c \"import pandas as pd; df=pd.read_csv\\('results/summary/CNNR/p_0.3_r_0.01/0896dd90/nw_stats_5000step.csv'\\); print\\(sorted\\(df['step'].unique\\(\\)\\)\\)\")",
-      "Bash(chmod +x /home/tomoyatakeda/document/research/manipulation-backfire-model/rerun_connectivity.sh)"
+      "Bash(chmod +x /home/tomoyatakeda/document/research/manipulation-backfire-model/rerun_connectivity.sh)",
+      "Bash(chmod +x /home/tomoyatakeda/document/research/manipulation-backfire-model/run_delta_sensitivity.sh)",
+      "Bash(grep -E '\\\\.sh$|\\\\.ipynb$')",
+      "Bash(python3 -c \"import sys,json; nb=json.load\\(sys.stdin\\); [print\\(c['source']\\) for c in nb['cells'][:5] if c['cell_type']=='code']\")"
     ]
   }
 }
