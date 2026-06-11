@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF2 Empirical Anchor — Technical Report</title>
+<style>
+  :root{
+    --fg:#1a1a1a; --muted:#5b6470; --line:#e2e6eb; --bg:#ffffff;
+    --accent:#2563eb; --accent2:#0d9488; --warn:#b45309; --bad:#b91c1c;
+    --code-bg:#f6f8fa; --good:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);background:#f3f5f7;
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP",sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 28px 96px;background:var(--bg);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:21px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:28px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 4px}
+  p{margin:12px 0}
+  code{font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;font-size:13.5px;
+    background:var(--code-bg);padding:1.5px 5px;border-radius:4px}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+    vertical-align:middle;letter-spacing:.03em}
+  .tag.bad{background:#fde8e8;color:var(--bad)}
+  .tag.good{background:#dcfce7;color:var(--good)}
+  .tag.warn{background:#fef3c7;color:var(--warn)}
+  .callout{border-left:4px solid var(--accent);background:#f0f6ff;padding:12px 16px;
+    margin:18px 0;border-radius:0 8px 8px 0}
+  .callout.warn{border-color:var(--warn);background:#fffbeb}
+  .callout.good{border-color:var(--good);background:#f0fdf4}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--muted);
+    margin:14px 0 30px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .meta b{color:var(--fg);font-weight:600}
+  .small{font-size:13px;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .chart{margin:20px 0}
+  .footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--muted)}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:5px 0}
+  .eq{font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Re-anchoring Stylized Fact&nbsp;2 (Cross-Partisan Repost Fraction) to Conover (2011) &amp; Wojcieszak (2022)</h1>
+<p class="sub">Technical report — citation audit, derivation, and reproduction</p>
+
+<div class="meta">
+  <span><b>Manuscript</b> Manipulating Moderate Hubs in Social Networks</span>
+  <span><b>Section</b> 3.2 / SF2</span>
+  <span><b>Date</b> 2026-06-11</span>
+  <span><b>Author</b> T. Takeda</span>
+</div>
+
+<p>This report documents the audit and re-anchoring of <b>SF2 (cross-partisan repost fraction)</b>:
+why the original anchor was wrong, what the cited literature actually reports, and the new framing
+(qualitative near-zero lower bound + a single numeric upper reference). Companion to the SF1 report.</p>
+
+<h2>1. The problem with the original anchor</h2>
+
+<p>The draft validated the model's cross-partisan repost fraction (<code>2.1%</code>) against a band of
+<code>2&ndash;7%</code>, citing Conover et al. (2011) and Halberstam &amp; Knight (2016). The supporting
+table (notebook) carried three errors:</p>
+
+<table>
+  <tr><th>Claim as written</th><th>What the source actually says</th><th></th></tr>
+  <tr>
+    <td>Conover modularity <b>Q&nbsp;&asymp;&nbsp;0.70</b> (retweet) vs. <b>0.11</b> (mention)</td>
+    <td>Conover reports <b>0.48</b> and <b>0.17</b> &mdash; both numbers were wrong.</td>
+    <td><span class="tag bad">FACTUAL ERROR</span></td>
+  </tr>
+  <tr>
+    <td>Halberstam &amp; Knight (2016): <b>~3%</b> cross-partisan retweet</td>
+    <td>H&amp;K report <b>80% / 67%</b> same-ideology <em>following</em> (20&ndash;33% cross-<em>following</em>) &mdash;
+        an <em>exposure</em> measure, not repost endorsement; no "3%" appears.</td>
+    <td><span class="tag bad">UNSUPPORTED</span></td>
+  </tr>
+  <tr>
+    <td>"<b>Ng et al. (2022)</b>": ~7% elite cross-retweet</td>
+    <td>The ~7% figure is from <b>Wojcieszak et al. (2022)</b> &mdash; wrong author attribution.</td>
+    <td><span class="tag warn">MISCITED</span></td>
+  </tr>
+</table>
+
+<h2>2. The construct is sound (unlike SF1)</h2>
+
+<p>The model measures the <b>fraction of repost edges that cross the opinion midpoint</b>, among partisan
+agents. A repost is a deliberate <em>endorsement</em> (Conover: "Retweets act as a form of endorsement").
+The empirical comparand &mdash; the fraction of retweets/shares crossing partisan lines &mdash; is the
+<b>same construct</b>. There is no exposure-vs-production mismatch here (the issue that broke SF1's original
+anchor). The only problem was the <em>numbers and citations</em>, not the operationalization.</p>
+
+<h2>3. Evidence from Conover et al. (2011), full text</h2>
+
+<p>Conover et al. analyzed 250k political tweets before the 2010 US midterms, building separate
+<em>retweet</em> and <em>mention</em> networks. Three quantitative findings establish that cross-partisan
+reposting is near-zero:</p>
+
+<h3>(a) Modularity</h3>
+<blockquote class="small">"The modularity induced by the communities in the retweet and mention networks have values of
+<b>0.48</b> and <b>0.17</b>, respectively." (z-scores 11.02 vs 2.06)</blockquote>
+
+<h3>(b) Cross-ideological retweet links vs. chance (Table&nbsp;5)</h3>
+<p>Observed / expected number of links under random mixing:</p>
+<table>
+  <tr><th>retweet network</th><th class="num">&rarr; Left</th><th class="num">&rarr; Right</th></tr>
+  <tr><td><b>Left</b></td><td class="num">1.70</td><td class="num"><b>0.05</b></td></tr>
+  <tr><td><b>Right</b></td><td class="num"><b>0.03</b></td><td class="num">2.32</td></tr>
+</table>
+<p class="small">Cross-partisan retweeting occurs at only <b>3&ndash;5%</b> of its randomly-expected frequency.
+(For contrast, the mention network is far more mixed: Left&rarr;Right 0.68, Right&rarr;Left 0.77.)</p>
+
+<h3>(c) Cluster purity &amp; explicit statement</h3>
+<p>Retweet cluster A = <b>93.4% right</b>; cluster B = <b>80.1% left</b> (Table 4). The authors conclude:</p>
+<blockquote class="small">"...they <b>very rarely share information from across the divide</b> with other members of their
+community ... political segregation, as manifested in the topology of the retweet network, persists."</blockquote>
+
+<div class="callout warn">
+  <b>Unit caveat.</b> Conover reports observed/expected <em>ratios</em> (0.03&ndash;0.05) and cluster
+  <em>purity</em>, <b>not</b> an absolute "% of retweets that cross partisan lines." So Conover anchors the
+  <b>qualitative "near-zero"</b> claim, not a numeric lower bound directly comparable to the model's 2.1%.
+</div>
+
+<h2>4. Upper reference: Wojcieszak et al. (2022)</h2>
+
+<p>The only clean, same-construct <em>numeric</em> anchor comes from
+<a href="https://www.science.org/doi/10.1126/sciadv.abn9418">Wojcieszak et al. (2022), <i>Science Advances</i></a>
+(1.5M users, 4 years):</p>
+<ul>
+  <li>In-group vs. out-group political-elite <b>following</b>: <b>90% / 10%</b>.</li>
+  <li><b>Sharing</b> from in-group elites <b>13&times;</b> more often than from out-group elites.</li>
+  <li>&rArr; out-group share fraction &asymp; 1/(1+13) = <b>~7%</b> of partisan shares cross the divide.</li>
+</ul>
+<p>Sharing is endorsement, so this is the correct construct for an upper reference.</p>
+
+<h2>5. Result</h2>
+
+<div class="chart">
+<svg viewBox="0 0 640 120" width="100%" role="img" aria-label="Cross-partisan repost fraction number line">
+  <line x1="40" y1="70" x2="600" y2="70" stroke="#cbd2da" stroke-width="2"/>
+  <!-- scale 0% at x=40, 8% at x=600 => 70 px per % -->
+  <g font-size="11" fill="#5b6470" font-family="monospace" text-anchor="middle">
+    <text x="40"  y="92">0%</text>
+    <text x="180" y="92">2%</text>
+    <text x="320" y="92">4%</text>
+    <text x="460" y="92">6%</text>
+    <text x="600" y="92">8%</text>
+  </g>
+  <!-- near-zero region (Conover) 0-? shaded -->
+  <rect x="40" y="58" width="90" height="24" fill="#dcfce7" opacity="0.7"/>
+  <text x="85" y="44" font-size="11" fill="#15803d" text-anchor="middle">near-zero (Conover)</text>
+  <!-- model 2.1% -> x = 40 + 2.1*70 = 187 -->
+  <circle cx="187" cy="70" r="7" fill="#2563eb"/>
+  <text x="187" y="32" font-size="12" fill="#2563eb" text-anchor="middle" font-weight="700">model 2.1%</text>
+  <line x1="187" y1="50" x2="187" y2="63" stroke="#2563eb" stroke-width="1.5"/>
+  <!-- Wojcieszak 7% -> x = 40 + 7*70 = 530 -->
+  <line x1="530" y1="58" x2="530" y2="82" stroke="#b45309" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="530" y="44" font-size="12" fill="#b45309" text-anchor="middle" font-weight="700">~7% (Wojcieszak)</text>
+</svg>
+</div>
+
+<div class="callout good">
+  Model cross-partisan repost fraction = <b>2.1%</b> (IQR [0.6%, 4.3%]) sits in the <b>near-zero regime</b>,
+  below the <b>~7%</b> upper reference and consistent with Conover's "very rarely share across the divide."
+  <span class="tag good">SF2 PASS</span>
+</div>
+
+<h2>6. Reproduction (model side)</h2>
+<pre><code># Repost network exported as GEXF at the pre-manipulation window.
+# Edge: source = reposter, target = original poster; weight = repost count.
+# cross-partisan repost fraction =
+#   (repost weight crossing the opinion midpoint, bins {0,1} <-> {3,4})
+#   / (repost weight among partisan agents only; centrist bin 2 excluded)
+#
+# Centrist exclusion matches Conover's sampling frame (left/right-annotated users).
+# Computed per run in emp-valid/validation.ipynb (parse_repost_gexf); median over runs = 2.1%.
+</code></pre>
+
+<h2>7. Caveats</h2>
+<ul>
+  <li><b>Lower bound is qualitative.</b> Conover gives obs/expected ratios and purity, not an absolute
+      cross fraction; we therefore claim "near-zero," not a numeric floor.</li>
+  <li><b>Upper reference is a single study</b> (Wojcieszak 2022), on elite-content sharing — a related but
+      not identical slice of repost behavior.</li>
+  <li><b>Era/platform differences.</b> Conover (2010 midterms) and Wojcieszak (2016&ndash;2019) span different
+      periods and samples; both nonetheless agree the cross-partisan endorsement rate is small.</li>
+  <li><b>Sasahara et al. (2021) excluded as an anchor.</b> It is itself an ABM (influence + unfollowing)
+      validated against Conover-type data, so it is a modeling comparand, not independent empirical ground
+      truth; cited elsewhere for the unfollowing mechanism.</li>
+</ul>
+
+<h2>8. Changes applied</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>docs/journal-June.tex</code></td><td>SF2 paragraph rewritten; cite <b>Conover2011</b> + <b>Wojcieszak2022</b>;
+      <b>Halberstam2016 removed</b>; lower bound stated qualitatively, upper bound ~7%.</td></tr>
+  <tr><td><code>emp-valid/validation.ipynb</code></td><td>SF2 table (Conover 0.48/0.17 &amp; 0.03&ndash;0.05; Wojcieszak ~7%),
+      <code>sf_data</code> (<code>empirical_low=0.0</code> = near-zero, <code>high=0.07</code>), unit notes, GEXF
+      denominator comment, and verify-notes all updated; H&amp;K removed.</td></tr>
+  <tr><td><code>emp-valid/stylized_facts_comparison.csv</code></td><td>SF2 row synced.</td></tr>
+</table>
+
+<div class="footer">
+  Sources: Conover et al. (2011), <i>Political Polarization on Twitter</i>, ICWSM (AAAI) &mdash; modularity 0.48/0.17, Table 5 obs/exp 0.03&ndash;0.05, Table 4 purity 93%/80% ·
+  Wojcieszak et al. (2022), <i>Science Advances</i> 8(39):eabn9418 &mdash; 90/10 following, 13:1 sharing.
+  Halberstam &amp; Knight (2016) removed (exposure measure, not endorsement). Model 2.1% from the
+  pre-manipulation repost GEXF, recorded in <code>stylized_facts_comparison.csv</code>.
+</div>
+
+</div>
+</body>
+</html>
