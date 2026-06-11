@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF3 Empirical Anchor — Technical Report</title>
+<style>
+  :root{
+    --fg:#1a1a1a; --muted:#5b6470; --line:#e2e6eb; --bg:#ffffff;
+    --accent:#2563eb; --accent2:#0d9488; --warn:#b45309; --bad:#b91c1c;
+    --code-bg:#f6f8fa; --good:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);background:#f3f5f7;
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP",sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 28px 96px;background:var(--bg);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:21px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:28px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 4px}
+  p{margin:12px 0}
+  code{font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;font-size:13.5px;
+    background:var(--code-bg);padding:1.5px 5px;border-radius:4px}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+    vertical-align:middle;letter-spacing:.03em}
+  .tag.bad{background:#fde8e8;color:var(--bad)}
+  .tag.good{background:#dcfce7;color:var(--good)}
+  .tag.warn{background:#fef3c7;color:var(--warn)}
+  .callout{border-left:4px solid var(--accent);background:#f0f6ff;padding:12px 16px;
+    margin:18px 0;border-radius:0 8px 8px 0}
+  .callout.warn{border-color:var(--warn);background:#fffbeb}
+  .callout.good{border-color:var(--good);background:#f0fdf4}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--muted);
+    margin:14px 0 30px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .meta b{color:var(--fg);font-weight:600}
+  .small{font-size:13px;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .chart{margin:20px 0}
+  .footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--muted)}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:5px 0}
+  .eq{font-style:italic}
+  blockquote{margin:14px 0;padding:8px 16px;border-left:3px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Re-anchoring Stylized Fact&nbsp;3 (Echo Chamber Depth) &#8212; and an Honest Directional Match</h1>
+<p class="sub">Technical report — citation audit, construct correction, and a self-corrected band</p>
+
+<div class="meta">
+  <span><b>Manuscript</b> Manipulating Moderate Hubs in Social Networks</span>
+  <span><b>Section</b> 3.2 / SF3</span>
+  <span><b>Date</b> 2026-06-11</span>
+  <span><b>Author</b> T. Takeda</span>
+</div>
+
+<p>This report documents the audit of <b>SF3 (echo chamber depth)</b>, the most problematic of the three
+stylized facts. It also records a self-correction: an arbitrary lower bound that was initially introduced
+to make the model "pass" was removed, and SF3 is now reported honestly as a <b>directional</b> (not point)
+match. Companion to the SF1 and SF2 reports.</p>
+
+<h2>1. The problem with the original anchor</h2>
+
+<p>The draft validated the model's extreme-agent comfort rate (<code>64.3%</code>) against a band of
+<code>55&#8211;65%</code> "within-group share," citing Barberá (2015) and Cinelli (2021), with Guess (2021)
+added in the notebook. All three citations were problematic:</p>
+
+<table>
+  <tr><th>Claim as written</th><th>What the source actually says</th><th></th></tr>
+  <tr>
+    <td>Guess (2021): partisan diet share <b>~55&#8211;65%</b></td>
+    <td>Guess is an <em>anti</em>-echo-chamber paper: average diets are moderate/diverse, ~65&#8211;70%
+        Dem/Rep <em>overlap</em>, "echo chambers&#8230;a reality for relatively few." It argues the
+        opposite of a 55&#8211;65% aligned share.</td>
+    <td><span class="tag bad">MISUSED</span></td>
+  </tr>
+  <tr>
+    <td>Cinelli (2021): "<b>~0.60&#8211;0.65</b> homophily index"</td>
+    <td>Cinelli reports a qualitative correlation between a user's leaning and their neighbors' mean leaning
+        (contour maps); <b>no such index</b> appears.</td>
+    <td><span class="tag warn">NO SUCH NUMBER</span></td>
+  </tr>
+  <tr>
+    <td>Barberá (2015): within-group share ~55&#8211;60% / 80%</td>
+    <td>The paper's thesis is "<em>More Than an Echo Chamber</em>"; it reports relative retweet homophily
+        ratios, not a clean within-group share.</td>
+    <td><span class="tag warn">NO CLEAN %</span></td>
+  </tr>
+</table>
+
+<h3>Construct &#38; population mismatch</h3>
+<ul>
+  <li>The model metric is the comfort rate of <b>extreme-opinion</b> agents — so the comparand should be
+      <em>engaged/partisan</em>-user diet alignment (which is <em>higher</em> than the average user), not an
+      "average user" figure.</li>
+  <li>"Comfort rate (aligned fraction of feed)" is yet another unit, distinct from Cinelli's correlation,
+      Guess's diet overlap, and Barberá's retweet ratios.</li>
+</ul>
+
+<h2>2. The honest re-anchor (same construct: aligned fraction of an engaged user's feed)</h2>
+
+<table>
+  <tr><th>Source</th><th>Measure</th><th class="num">Value</th></tr>
+  <tr><td>Bakshy et al. (2015) <i>Science</i></td><td>Cross-cutting hard news in feed &#8594; aligned share, by group</td>
+      <td class="num">65% (cons.)<br>76% (lib.)<br>~71.5% overall</td></tr>
+  <tr><td>Conover et al. (2011) ICWSM</td><td>Partisan retweet-community purity (Table 4)</td><td class="num">80&#8211;93%</td></tr>
+  <tr><td>Cinelli et al. (2021) PNAS</td><td>Leaning vs. neighbor-leaning correlation (Twitter)</td><td class="num">strong (qualitative)</td></tr>
+</table>
+<p class="small">Bakshy's aligned share = 1 &#8722; cross-cutting fraction (liberals 24% cross-cutting &#8594; 76% aligned;
+conservatives 35% &#8594; 65%). This is the same construct as the model's comfort rate (the aligned fraction of
+the feed), so it is the proper numeric anchor. The empirical range for engaged users is therefore
+<b>~65&#8211;76%</b>.</p>
+
+<h2>3. Self-correction: the arbitrary 0.55 floor</h2>
+
+<div class="callout warn">
+  An earlier version of this re-anchoring used a band of <code>[0.55, 0.75]</code> so the model's 64.3% would
+  fall inside. <b>The 0.55 had no empirical source</b> — it was a "majority (&gt;50%)" floor — i.e. exactly the
+  unsourced-number problem this whole audit set out to fix. It was removed. The band is now the genuine
+  Bakshy-derived range <code>[0.65, 0.76]</code>, and the result is reported honestly even though the model
+  falls just below it.
+</div>
+
+<h2>4. Result — a directional match</h2>
+
+<div class="chart">
+<svg viewBox="0 0 640 120" width="100%" role="img" aria-label="Aligned feed share number line">
+  <line x1="40" y1="70" x2="600" y2="70" stroke="#cbd2da" stroke-width="2"/>
+  <!-- scale: 50% at x=40, 90% at x=600 => 14 px per % -->
+  <g font-size="11" fill="#5b6470" font-family="monospace" text-anchor="middle">
+    <text x="40"  y="92">50%</text>
+    <text x="180" y="92">60%</text>
+    <text x="320" y="92">70%</text>
+    <text x="460" y="92">80%</text>
+    <text x="600" y="92">90%</text>
+  </g>
+  <!-- empirical band 65-76% -> x: 65->250, 76->404 -->
+  <rect x="250" y="58" width="154" height="24" fill="#dcfce7" opacity="0.8"/>
+  <text x="327" y="44" font-size="11" fill="#15803d" text-anchor="middle">empirical 65&#8211;76% (Bakshy)</text>
+  <!-- Conover purity 80-93 -> x: 80->460, 93->642(clip 600) -->
+  <rect x="460" y="62" width="140" height="16" fill="#e2e6eb" opacity="0.7"/>
+  <text x="530" y="108" font-size="10" fill="#5b6470" text-anchor="middle">Conover purity 80&#8211;93%</text>
+  <!-- model 64.3% -> x = 40 + 14.3*14 = 240 -->
+  <circle cx="240" cy="70" r="7" fill="#2563eb"/>
+  <text x="240" y="32" font-size="12" fill="#2563eb" text-anchor="middle" font-weight="700">model 64.3%</text>
+  <line x1="240" y1="50" x2="240" y2="63" stroke="#2563eb" stroke-width="1.5"/>
+</svg>
+</div>
+
+<div class="callout">
+  Model extreme-agent comfort rate = <b>64.3%</b> (IQR [57.7%, 70.1%]) sits <b>just below</b> the empirical
+  aligned-share range (<b>~65&#8211;76%</b>). SF3 is therefore a <b>directional match</b>, not a point match
+  <span class="tag warn">&#8776; DIRECTIONAL</span>: the model reproduces the qualitative signature of a
+  <em>partial</em> echo chamber (majority-aligned, far from total) but a slightly <b>shallower</b> one than
+  observed.
+</div>
+
+<p><b>Interpretation (and why this is acceptable).</b> A milder-than-observed echo chamber means the model is a
+<em>conservative</em> substrate for the backfire effect: it does not pre-bake strong segregation that would
+inflate the manipulation's downstream impact. The backfire result is therefore not an artifact of an
+over-tuned echo chamber.</p>
+
+<h2>5. Caveats</h2>
+<ul>
+  <li><b>Unit is approximate.</b> The model's comfort rate (aligned fraction within bounded confidence) is
+      conceptually, not identically, the same as Bakshy's aligned-exposure share; hence directional, not point.</li>
+  <li><b>Population matters.</b> The comparand is engaged/partisan users; average-user figures (Guess) are not
+      applicable and were removed.</li>
+  <li><b>The literature is genuinely split.</b> Cinelli (strong echo chambers) vs. Guess/Bakshy (more moderate
+      than believed); SF3 takes the engaged-user, partial-chamber reading rather than papering over the split
+      with a single number.</li>
+</ul>
+
+<h2>6. Changes applied</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>docs/journal-June.tex</code></td><td>SF3 paragraph rewritten: cite <b>Cinelli2021 + Bakshy2015 + Conover2011</b>;
+      <b>Guess and Barberá removed</b>; reported as a directional match against ~65&#8211;76%; "reproduces all three"
+      softened to "quantitatively SF1+SF2, directionally SF3."</td></tr>
+  <tr><td><code>emp-valid/validation.ipynb</code></td><td>SF3 table/<code>sf_data</code>/unit-notes updated; band
+      <code>[0.65, 0.76]</code> (Bakshy), match computes "outside range" &#8594; &#8776;; arbitrary 0.55 floor removed;
+      verify flags cleared.</td></tr>
+  <tr><td><code>emp-valid/stylized_facts_comparison.csv</code></td><td>SF3 row synced (match = outside range &#8594; &#8776;).</td></tr>
+</table>
+
+<div class="footer">
+  Sources: Bakshy et al. (2015), <i>Science</i> 348(6239):1130&#8211;1132 &#8212; feed cross-cutting 24% (lib) / 35% (cons), 28.5% overall ·
+  Conover et al. (2011), ICWSM &#8212; retweet-community purity 80&#8211;93% ·
+  Cinelli et al. (2021), PNAS 118(9):e2023301118 &#8212; qualitative leaning&#8211;neighbor homophily ·
+  Guess (2021), <i>AJPS</i> &#8212; removed (anti-echo-chamber) · Barberá et al. (2015) &#8212; removed (no clean within-group %).
+  Model 64.3% from the pre-manipulation comfort rate of extreme-bin agents, recorded in <code>stylized_facts_comparison.csv</code>.
+</div>
+
+</div>
+</body>
+</html>
