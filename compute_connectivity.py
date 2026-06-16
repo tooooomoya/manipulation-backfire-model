@@ -96,15 +96,20 @@ def _algebraic_connectivity(G_und):
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python3 compute_connectivity.py <dest_dir>")
+    # Optional --force: overwrite an existing CSV (needed to regenerate the
+    # buggy full-graph lambda2 that 00_build_summary may have written before the
+    # giant-component fix). Default behaviour (skip-if-exists) is unchanged.
+    args  = [a for a in sys.argv[1:] if a != '--force']
+    force = '--force' in sys.argv[1:]
+    if len(args) != 1:
+        print("Usage: python3 compute_connectivity.py <dest_dir> [--force]")
         sys.exit(2)
 
-    dest_dir = sys.argv[1]
+    dest_dir = args[0]
 
     out_path = os.path.join(dest_dir, 'connectivity_5000step.csv')
-    if os.path.exists(out_path):
-        print(f"Already exists, skipping: {out_path}")
+    if os.path.exists(out_path) and not force:
+        print(f"Already exists, skipping (use --force to overwrite): {out_path}")
         sys.exit(1)
 
     seeds_path = os.path.join(dest_dir, 'selected_seeds.json')
