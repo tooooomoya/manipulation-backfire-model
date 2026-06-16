@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backfire Mechanism — Implementation &amp; Measured Data</title>
+<style>
+  :root{
+    --fg:#1a1a1a; --muted:#5b6470; --line:#e2e6eb; --bg:#ffffff;
+    --accent:#2563eb; --accent2:#0d9488; --warn:#b45309; --bad:#b91c1c;
+    --code-bg:#f6f8fa; --good:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);background:#f3f5f7;
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP",sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 28px 96px;background:var(--bg);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:21px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:28px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 4px}
+  p{margin:12px 0}
+  code{font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;font-size:13.5px;
+    background:var(--code-bg);padding:1.5px 5px;border-radius:4px}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+    vertical-align:middle;letter-spacing:.03em}
+  .tag.bad{background:#fde8e8;color:var(--bad)}
+  .tag.good{background:#dcfce7;color:var(--good)}
+  .tag.warn{background:#fef3c7;color:var(--warn)}
+  .callout{border-left:4px solid var(--accent);background:#f0f6ff;padding:12px 16px;
+    margin:18px 0;border-radius:0 8px 8px 0}
+  .callout.warn{border-color:var(--warn);background:#fffbeb}
+  .callout.good{border-color:var(--good);background:#f0fdf4}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px;color:var(--muted);
+    margin:14px 0 30px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .meta b{color:var(--fg);font-weight:600}
+  .small{font-size:13px;color:var(--muted)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--muted)}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:5px 0}
+  .eq{font-style:italic}
+  blockquote{margin:14px 0;padding:8px 16px;border-left:3px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Backfire Mechanism &#8212; Implementation &amp; Measured Data</h1>
+<p class="sub">Technical companion to &sect;<i>Mechanism of the Backfire Effect</i></p>
+
+<div class="meta">
+  <span><b>Notebook</b> <code>backfire-mechanism-hk.ipynb</code></span>
+  <span><b>Condition</b> HK <code>p_t=0.3</code>, &mu;=0.8, &epsilon;<sub>s</sub>=0.5</span>
+  <span><b>exp_id</b> <code>63f67d05</code></span>
+  <span><b>Trials</b> n=100 (50 seeds &times; 2 directions)</span>
+  <span><b>Date</b> 2026-06-15</span>
+</div>
+
+<p>This report documents (i)&nbsp;<b>what was computed and how</b> &#8212; every
+metric in the mechanism analysis, its definition, and the code path that produced
+it &#8212; and (ii)&nbsp;<b>the measured values</b> together with the exact files
+that hold them. The entire analysis is in a <b>single notebook</b>,
+<code>backfire-mechanism-hk.ipynb</code>, and uses <b>only on-disk simulation
+output</b> (no new simulations). An earlier variant with an
+Erd&#337;s&#8211;R&#233;nyi contrast (<code>backfire-mechanism-analysis.ipynb</code>)
+is superseded: the camp-averaged cRate did not differ between topologies, making
+that contrast uninformative, so the final analysis is single-condition and relies
+on a seed-level dose-response for identification.</p>
+
+<div class="callout">
+<b>The chain under test (paper &sect;Appearance of the Backfire Effect).</b>
+manipulation &rarr; <b>(1)</b>&nbsp;opposing followers unfollow the hub &rarr;
+<b>(2,3)</b>&nbsp;hub loses its bridging role / connectivity drops &rarr;
+<b>(4)</b>&nbsp;opposing camp forms an echo chamber, concentrated in the hub's
+former followers &rarr; <b>(5)</b>&nbsp;echo chamber raises opposing posting &rarr;
+opposing camp outgrows targeted camp&nbsp;= <b>backfire</b>.
+</div>
+
+<h2>1. Data provenance &amp; regeneration</h2>
+
+<p>All inputs live under
+<code>results/summary/HolmeKim/A_1_m_3_pt_0.3/63f67d05/</code>. Three of the CSVs
+were (re)generated for this analysis from the on-disk GEXF snapshots and metrics
+logs of the same runs (<code>results/run_&lt;seed&gt;_dir_&lt;&plusmn;1.0&gt;/</code>),
+so no simulation was rerun:</p>
+
+<table>
+<tr><th>Regenerated artifact</th><th>Producer</th><th>Why</th></tr>
+<tr><td><code>connectivity_5000step.csv</code></td><td><code>compute_connectivity.py</code></td>
+  <td>Switch &lambda;<sub>2</sub> to the <b>giant component</b> (full follow-graph is disconnected &rarr; &lambda;<sub>2</sub>&equiv;0)</td></tr>
+<tr><td><code>crate_100step.csv</code>, <code>follower_crate_proxy_5000step.csv</code></td><td><code>regen_mechanism_crate_proxy.py</code> (= save-results Items&nbsp;9/10)</td>
+  <td>These echo-chamber CSVs did not exist for this exp_id</td></tr>
+<tr><td><code>+ modularity</code> col in <code>nw_stats_5000step.csv</code>,<br><code>+ betweenness_gc</code> col in <code>target_hub_metrics_5000step.csv</code></td><td><code>regen_mechanism_modularity_betweenness.py</code></td>
+  <td>modularity absent (older generation); betweenness needs giant-component, undirected</td></tr>
+</table>
+
+<p class="small">The previous (buggy) connectivity file is backed up at
+<code>/tmp/connectivity_63f_OLD.csv</code>. The original directed full-graph
+<code>betweenness</code> column is retained for reference but is not used.</p>
+
+<h2>2. What each quantity is, and how it is computed</h2>
+
+<h3>Outcome &mdash; backfire magnitude b</h3>
+<p>Per-trial log-response ratio (paper Eq.&nbsp;for backfire), from
+<code>post_count_100step.csv</code>:</p>
+<pre><code>b = log( v_opp^post / v_opp^pre ) - log( v_tgt^post / v_tgt^pre )
+pre window  t in [19000, 20000]      post window  t in [39000, 40000]
+opp = far_opposite + near_opposite   tgt = near_target + far_target  (posts/step)</code></pre>
+<p>Opinion classes are <b>direction-relative</b> (relative to the manipulation
+direction), allowing both directions to be pooled. <code>b&gt;0</code> = backfire.</p>
+
+<h3>(1) Selective unfollowing</h3>
+<ul>
+<li><b>Unfollows by class</b> (<code>unfollow_by_class.csv</code>): count of
+followers in each opinion class that drop the hub, split into pre
+(<code>0&ndash;20000</code>) and post (<code>20000&ndash;40000</code>) windows.
+Camp = sum of its two classes.</li>
+<li><b>Follower composition</b> (<code>follower_composition_5000step.csv</code>):
+fraction of the hub's in-neighbours in each class, per 5000-step snapshot.</li>
+</ul>
+
+<h3>(2,3) Bridging role</h3>
+<ul>
+<li><b><code>betweenness_gc</code></b> (<code>target_hub_metrics_5000step.csv</code>):
+betweenness centrality of the hub on the <b>undirected giant component</b>,
+normalized; the hub is tracked by its step-20000 identity across all snapshots
+(so the pre-onset trajectory is defined). Directed full-graph betweenness is
+&asymp;0 because the hub is a near-pure in-degree sink, hence the giant-component
+undirected version.</li>
+<li><b><code>target_is_ap</code></b> (<code>connectivity_5000step.csv</code>):
+fraction of trials in which the hub is an <b>articulation point</b> of the giant
+component (its removal disconnects the component).</li>
+<li><b><code>lambda2_G</code></b>: algebraic connectivity (Fiedler value) of the
+undirected giant component; <code>delta_lambda2</code> is the drop when the hub
+is removed.</li>
+</ul>
+
+<h3>(4) Echo chamber</h3>
+<ul>
+<li><b>cRate</b> (<code>crate_100step.csv</code>): the fraction of an agent's
+feed posts within &plusmn;0.2 (<code>Const.MINIMUM_BC</code>) of its own opinion,
+averaged within each direction-relative class &mdash; the simulation's direct
+echo-chamber exposure metric.</li>
+<li><b>Structural cRate proxy</b> (<code>follower_crate_proxy_5000step.csv</code>):
+for each agent, the postProb-weighted fraction of its <i>followees</i> whose
+opinion is within &plusmn;0.2 of its own. Agents are split by
+<code>is_follower</code> &mdash; whether they followed the hub <b>at step 20000</b>
+(fixed, so unfollowers are still tracked). This isolates the hub's former
+followers from non-followers within the opposing camp.</li>
+<li><b>modularity</b> (<code>nw_stats_5000step.csv</code>): directed
+Leicht&#8211;Newman <span class="eq">Q</span>, communities via Louvain on the
+undirected projection.</li>
+</ul>
+
+<h3>(5) Activity &amp; outcome</h3>
+<ul>
+<li><b>Posting-prob increase</b> (<code>posting_prob_increase_by_class.csv</code>):
+fraction of agents per class whose mean postProb is higher in
+<code>[35000,40000]</code> than in <code>[15000,20000]</code>.</li>
+<li><b>Post share</b> (<code>post_count_100step.csv</code>): camp post count
+divided by total, per step.</li>
+</ul>
+
+<h3>Identification &mdash; dose-response</h3>
+<p>Per-trial Spearman correlation of <code>b</code> against two upstream
+intensities: opposing-camp unfollows in the post window, and the pre&rarr;post
+change in aggregate opposing-camp cRate. Each correlation uses its own maximal
+sample (they are <b>not</b> co-dropped).</p>
+
+<h2>3. Measured data</h2>
+
+<p>Outcome over n=100 trials: <b>&bar;b = +0.056</b>, sd 0.125, Cohen's
+<b>d = +0.45</b>, one-sided t-test vs 0: <b>t = 4.50, p = 9.1&times;10<sup>&minus;6</sup></b>
+<span class="tag good">backfire present</span></p>
+
+<h3>Causal-chain evidence</h3>
+<table>
+<tr><th>Link</th><th>Quantity</th><th class="num">pre / onset</th><th class="num">post / end</th><th>Note</th></tr>
+<tr><td>(1)</td><td>Opposing-camp unfollows of hub</td><td class="num">21.4</td><td class="num">104.8</td><td>paired t=10.7, p&lt;10<sup>&minus;17</sup></td></tr>
+<tr><td>(1)</td><td>Targeted-camp unfollows of hub</td><td class="num">21.4</td><td class="num">26.3</td><td>&mdash;</td></tr>
+<tr><td>(1)</td><td>Opposing frac. of hub followers</td><td class="num">0.31</td><td class="num">0.00</td><td>onset&rarr;end</td></tr>
+<tr><td>(1)</td><td>Targeted frac. of hub followers</td><td class="num">0.31</td><td class="num">0.95</td><td>onset&rarr;end</td></tr>
+<tr><td>(2,3)</td><td>Hub betweenness (giant comp.)</td><td class="num">0.246</td><td class="num">0.022</td><td>onset&rarr;end</td></tr>
+<tr><td>(2,3)</td><td>P(hub is articulation point)</td><td class="num">0.97</td><td class="num">0.22</td><td>onset&rarr;end</td></tr>
+<tr><td>(2,3)</td><td>&lambda;<sub>2</sub> (giant component)</td><td class="num">0.175</td><td class="num">0.110</td><td>onset&rarr;end</td></tr>
+<tr><td>(4)</td><td>Opposing camp cRate (aggregate)</td><td class="num">0.525</td><td class="num">0.568</td><td>weak <span class="tag warn">+0.043</span></td></tr>
+<tr><td>(4)</td><td>cRate, hub's former followers (opp.)</td><td class="num">0.32</td><td class="num">0.74</td><td><span class="tag good">specificity</span></td></tr>
+<tr><td>(4)</td><td>cRate, non-followers (opp.)</td><td class="num">0.82</td><td class="num">0.82</td><td>flat</td></tr>
+<tr><td>(4)</td><td>Network modularity</td><td class="num">0.46</td><td class="num">0.56</td><td>onset&rarr;end</td></tr>
+<tr><td>(5)</td><td>Opposing-camp post share</td><td class="num">0.399</td><td class="num">0.408</td><td>pre&rarr;post</td></tr>
+<tr><td>(5)</td><td>Targeted-camp post share</td><td class="num">0.399</td><td class="num">0.386</td><td>pre&rarr;post</td></tr>
+</table>
+
+<h3>Posting-prob increase by class (link 5)</h3>
+<table>
+<tr><th>Class (direction-relative)</th><th class="num">far_opp</th><th class="num">near_opp</th><th class="num">neutral</th><th class="num">near_tgt</th><th class="num">far_tgt</th></tr>
+<tr><td>Fraction increasing postProb</td><td class="num">0.21</td><td class="num">0.28</td><td class="num">0.29</td><td class="num">0.20</td><td class="num">0.21</td></tr>
+</table>
+
+<h3>Identification &mdash; dose-response</h3>
+<table>
+<tr><th>Upstream intensity (per trial)</th><th class="num">Spearman &rho;</th><th class="num">p</th><th class="num">n</th><th>Verdict</th></tr>
+<tr><td>Opposing-camp unfollows (post window)</td><td class="num">+0.282</td><td class="num">0.004</td><td class="num">100</td><td><span class="tag good">graded</span></td></tr>
+<tr><td>&Delta; aggregate opposing cRate (post &minus; pre)</td><td class="num">+0.052</td><td class="num">0.686</td><td class="num">64</td><td><span class="tag bad">not graded</span></td></tr>
+</table>
+
+<div class="callout warn">
+<b>Honest reading.</b> The <i>upstream cause</i> (unfollowing) is significantly
+graded with the backfire; the <i>aggregate</i> cRate change is not. This is
+coherent with link&nbsp;(4): at this high-stubbornness baseline the camp-averaged
+exposure is a saturated, noisy mediator, while the bridge-loss driver and the
+<b>follower-level</b> echo effect (0.32&rarr;0.74 vs. a flat 0.82 for
+non-followers) carry the mechanism. The cRate dose-response is limited to n=64
+because 36 trials' feed-exposure logging stops at step 20000.
+</div>
+
+<h2>4. File map</h2>
+<table>
+<tr><th>File (under <code>results/summary/HolmeKim/A_1_m_3_pt_0.3/63f67d05/</code>)</th><th>Feeds link(s)</th></tr>
+<tr><td><code>post_count_100step.csv</code></td><td>outcome b, (5) post share</td></tr>
+<tr><td><code>unfollow_by_class.csv</code></td><td>(1), dose-response</td></tr>
+<tr><td><code>follower_composition_5000step.csv</code></td><td>(1)</td></tr>
+<tr><td><code>target_hub_metrics_5000step.csv</code> (+ <code>betweenness_gc</code>)</td><td>(2,3)</td></tr>
+<tr><td><code>connectivity_5000step.csv</code> (giant-component)</td><td>(2,3)</td></tr>
+<tr><td><code>crate_100step.csv</code></td><td>(4), dose-response</td></tr>
+<tr><td><code>follower_crate_proxy_5000step.csv</code></td><td>(4) specificity</td></tr>
+<tr><td><code>nw_stats_5000step.csv</code> (+ <code>modularity</code>)</td><td>(4)</td></tr>
+<tr><td><code>posting_prob_increase_by_class.csv</code></td><td>(5)</td></tr>
+</table>
+
+<h2>5. Caveats</h2>
+<ul>
+<li>Single condition (HK, &mu;=0.8); generalisation across networks/parameters is
+the sensitivity analysis, not this section.</li>
+<li>The mechanism's specificity is visible at the <b>follower level</b> and in
+the articulation-point signal, <b>not</b> in camp-averaged cRate.</li>
+<li>Connectivity and betweenness use the undirected giant component; the original
+directed full-graph <code>betweenness</code> is retained but unused.</li>
+<li>Dose-response is observational (cross-seed), not an interventional ablation:
+it shows the pathway is <i>graded</i>, not that it is the <i>sole</i> cause.
+An ablation (disabling unfollowing) is noted as future work.</li>
+</ul>
+
+<div class="footer">
+Generated 2026-06-15. Analysis notebook: <code>backfire-mechanism-hk.ipynb</code>.
+All values reproducible from the listed CSVs; CSV regeneration scripts:
+<code>compute_connectivity.py</code>, <code>regen_mechanism_crate_proxy.py</code>,
+<code>regen_mechanism_modularity_betweenness.py</code>.
+</div>
+
+</div>
+</body>
+</html>
