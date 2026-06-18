@@ -114,7 +114,7 @@ run_condition() {
     echo "  Simulations done. Saving results..."
     source "$PROJ/venv/bin/activate"
     jupyter nbconvert --to notebook --execute --inplace \
-        --ExecutePreprocessor.timeout=3600 \
+        --ExecutePreprocessor.timeout=7200 \
         "$PROJ/notebooks/00_build_summary.ipynb"
 
     echo "$cnum" > "$PROGRESS_DIR/completed.txt"
