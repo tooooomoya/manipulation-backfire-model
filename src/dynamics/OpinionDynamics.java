@@ -147,13 +147,21 @@ public class OpinionDynamics {
             Collections.shuffle(shuffledAgents, randomGenerator.get());
 
             if (step == 20000) {
+                // Selection is identical in both arms (same seed => same pre-onset
+                // history), so the would-be target is the same node whether or not
+                // manipulation fires. Record it either way, and early-stop in both
+                // arms when the pool is empty so the valid-seed sets stay matched.
                 List<Integer> targetUsers = expIntervention.getManipulationTarget(agentSet, admin.getAdjacencyMatrix(), Const.NUM_MANIPULATION_TARGETS);
-                System.out.println("Target users for manipulation: " + targetUsers);
+                System.out.println("Target users for manipulation: " + targetUsers
+                        + " (manipulationEnabled=" + Const.MANIPULATION_ENABLED + ")");
                 if (targetUsers.isEmpty()) {
                     earlyStop = true;
                 }
-                for (int userId : targetUsers) {
-                    agentSet[userId].setTarget();
+                writeTargetIds(targetUsers);
+                if (Const.MANIPULATION_ENABLED) {
+                    for (int userId : targetUsers) {
+                        agentSet[userId].setTarget();
+                    }
                 }
             }
 
@@ -267,6 +275,22 @@ public class OpinionDynamics {
         writer.flush(); // flush final partial batch
     }
 
+    /**
+     * Record the selected (would-be) target IDs to target_id.json in the run
+     * folder. Written in both arms so the analysis has one code path for
+     * identifying the target node, even in the control where no node carries
+     * the GEXF target=true attribute.
+     */
+    private void writeTargetIds(List<Integer> targetUsers) {
+        String json = "{\"manipulationEnabled\": " + Const.MANIPULATION_ENABLED
+                + ", \"targets\": " + targetUsers.toString() + "}\n";
+        try {
+            Files.writeString(Path.of(folerPath, "target_id.json"), json);
+        } catch (Exception e) {
+            System.err.println("Failed to write target_id.json: " + e.getMessage());
+        }
+    }
+
     public static void main(String[] args) {
 
         int seed = Integer.parseInt(args[0]);
@@ -276,8 +300,15 @@ public class OpinionDynamics {
             Const.TARGET_DIRECTION = Double.parseDouble(args[1]);
         }
 
+        // args[2]: manipulation flag ("1"/default = on, "0" = pure no-target control).
+        if (args.length > 2) {
+            Const.MANIPULATION_ENABLED = !(args[2].equals("0") || args[2].equalsIgnoreCase("false"));
+        }
+
         Const.RANDOM_SEED = seed;
-        Const.RESULT_FOLDER_PATH = "results/run_" + seed + "_dir_" + Const.TARGET_DIRECTION + "/";
+        int manipFlag = Const.MANIPULATION_ENABLED ? 1 : 0;
+        Const.RESULT_FOLDER_PATH = "results/run_" + seed + "_dir_" + Const.TARGET_DIRECTION
+                + "_manip_" + manipFlag + "/";
 
         String[] subfolders = {
             "clusterings",

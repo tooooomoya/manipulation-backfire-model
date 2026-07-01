@@ -7,6 +7,12 @@ public class Const {
     public static final int NUM_OF_SNS_USER = NUM_OF_USER;
     public static int RANDOM_SEED = 0;
     public static double TARGET_DIRECTION = 0;
+    // When false, the would-be target is still selected (and recorded) at the
+    // manipulation step but is NOT flagged as a target: it keeps behaving as a
+    // normal agent (no extremization, no MAX_PP pin). This is the pure
+    // no-manipulation control. Runs are bit-identical to the manipulated run of
+    // the same seed up to the onset step, then diverge only via the target.
+    public static boolean MANIPULATION_ENABLED = true;
     public static int FOLLOWER_THRESHOLD = 100;
     public static int NUM_MANIPULATION_TARGETS = 1;
 

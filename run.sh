@@ -42,10 +42,10 @@ rm -f "$LOGDIR"/*.log
 rm -rf results/run_*
 
 SEED_COUNT=$(echo $TARGET_SEEDS | wc -w)
-TOTAL_RUNS=$((SEED_COUNT * 2))
+TOTAL_RUNS=$((SEED_COUNT * 3))
 
 echo "Starting simulations for specific seeds: [ $TARGET_SEEDS ]"
-echo "Total runs: $TOTAL_RUNS (x2 targets per seed)..."
+echo "Total runs: $TOTAL_RUNS (2 manipulated targets + 1 no-target control per seed)..."
 
 # ================================
 # 3. run function
@@ -53,22 +53,26 @@ echo "Total runs: $TOTAL_RUNS (x2 targets per seed)..."
 run_one() {
     local seed=$1
     local target=$2
-    
+    local manip=${3:-1}   # 1 = manipulated (default), 0 = pure no-target control
+
     local label="pos"
     if [ "$target" = "-1.0" ]; then
         label="neg"
     fi
+    if [ "$manip" = "0" ]; then
+        label="ctrl"
+    fi
     local logfile="${LOGDIR}/run_${seed}_${label}.log"
 
-    echo "[START] seed=$seed target=$target $(date)" > "$logfile"
+    echo "[START] seed=$seed target=$target manip=$manip $(date)" > "$logfile"
 
     java -Xmx${JAVA_HEAP} \
          -XX:+ExitOnOutOfMemoryError \
          -cp "${LIBCP}:bin" \
-         dynamics.OpinionDynamics "$seed" "$target" \
+         dynamics.OpinionDynamics "$seed" "$target" "$manip" \
          >> "$logfile" 2>&1
 
-    echo "[END]   seed=$seed target=$target $(date)" >> "$logfile"
+    echo "[END]   seed=$seed target=$target manip=$manip $(date)" >> "$logfile"
 }
 
 export -f run_one
@@ -79,13 +83,15 @@ export LIBCP JAVA_HEAP LOGDIR
 # ================================
 
 for seed in $TARGET_SEEDS; do
-    # pattarn 1: Target 1.0
-    echo "$seed"
-    echo "1.0"
-    
-    # pattarn 2: Target -1.0
-    echo "$seed"
-    echo "-1.0"
-done | xargs -n 2 -P "$MAX_PARALLEL" bash -c 'run_one "$1" "$2"' _
+    # pattern 1: manipulated, Target +1.0
+    printf '%s\n' "$seed" "1.0"  "1"
+
+    # pattern 2: manipulated, Target -1.0
+    printf '%s\n' "$seed" "-1.0" "1"
+
+    # pattern 3: pure no-target control (dir has no effect, so one run per seed;
+    # dir=1.0 is just a placeholder for the folder name).
+    printf '%s\n' "$seed" "1.0"  "0"
+done | xargs -n 3 -P "$MAX_PARALLEL" bash -c 'run_one "$1" "$2" "$3"' _
 
 echo "All simulations completed!"
