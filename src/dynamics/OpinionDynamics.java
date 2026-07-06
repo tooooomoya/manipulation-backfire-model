@@ -146,7 +146,7 @@ public class OpinionDynamics {
             List<Agent> shuffledAgents = new ArrayList<>(Arrays.asList(agentSet));
             Collections.shuffle(shuffledAgents, randomGenerator.get());
 
-            if (step == 20000) {
+            if (step == 15000) {
                 // Selection is identical in both arms (same seed => same pre-onset
                 // history), so the would-be target is the same node whether or not
                 // manipulation fires. Record it either way, and early-stop in both
