@@ -5,6 +5,8 @@ import agent.*;
 import analysis.*;
 import constants.Const;
 import gephi.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -33,6 +35,7 @@ public class OpinionDynamics {
     private double connectionProbability = Const.CONNECTION_PROB_OF_RANDOM_NW;
     private AdminOptim admin;
     private int[][] repostNetwork;
+    private BufferedWriter targetTrace; // per-step trace of the manipulation target (opened at onset)
 
     // constructor
     public OpinionDynamics() {
@@ -97,6 +100,15 @@ public class OpinionDynamics {
             Const.OPINION_PREVALENCE   = cfg.getTopDouble("epsilon_s",     Const.OPINION_PREVALENCE);
             Const.DELTA_PP             = cfg.getTopDouble("delta_rho",     Const.DELTA_PP);
             Const.BC_DEC_RATE          = cfg.getTopDouble("delta_epsilon",  Const.BC_DEC_RATE);
+            // manipulation ablation settings (defaults = submitted model)
+            Const.MANIP_SHIFT     = Boolean.parseBoolean(cfg.getTopString("manip_shift", String.valueOf(Const.MANIP_SHIFT)));
+            Const.MANIP_RHO_MODE  = Const.RhoMode.valueOf(cfg.getTopString("manip_rho_mode", Const.MANIP_RHO_MODE.name()).toUpperCase());
+            Const.MANIP_RHO_VALUE = cfg.getTopDouble("manip_rho_value", Const.MANIP_RHO_VALUE);
+            Const.MANIP_DELTA     = cfg.getTopDouble("manip_delta",     Const.MANIP_DELTA);
+            System.out.println("[CONFIG] manip_shift=" + Const.MANIP_SHIFT
+                    + " manip_rho_mode=" + Const.MANIP_RHO_MODE
+                    + " manip_rho_value=" + Const.MANIP_RHO_VALUE
+                    + " manip_delta=" + Const.MANIP_DELTA);
             System.out.println("[CONFIG] mu=" + Const.INITIAL_STUBBORNNESS
                     + " epsilon_s=" + Const.OPINION_PREVALENCE
                     + " delta_rho=" + Const.DELTA_PP
@@ -186,7 +198,9 @@ public class OpinionDynamics {
                 for (int userId : targetUsers) {
                     agentSet[userId].setTarget();
                 }
+                openTargetTrace();
             }
+            boolean[] targetPosted = new boolean[agentNum]; // which targets posted at this step
 
             for (Agent agent : shuffledAgents) {
                 int agentId = agent.getId();
@@ -229,6 +243,8 @@ public class OpinionDynamics {
                     if (!agent.getTarget()) {
                         writer.setPostBins(post);
                         analyzer.setPostCash(post);
+                    } else {
+                        targetPosted[agentId] = true;
                     }
                     postList.add(post);
                 }
@@ -278,6 +294,9 @@ public class OpinionDynamics {
             writer.setPostProbMeanArray(analyzer.getPostProbMeanArray());
             writer.write();
 
+            writeTargetTrace(step, targetPosted);
+            if (step % 1000 == 0 && step >= 19000) writeAgentSnapshot(step);
+
             if (earlyStop) {
                 System.out.println("[STOP] No manipulation target found; halting simulation at step " + step + ".");
                 break;
@@ -285,6 +304,67 @@ public class OpinionDynamics {
         }
 
         writer.flush(); // flush final partial batch
+        closeTargetTrace();
+    }
+
+    // ── target trace: per-step state/exposure of the manipulation target ──────────────
+    // posted           : 1 if the target posted at this step
+    // n_followers      : current follower count
+    // n_followers_opp  : followers whose opinion lies on the opposite side of 0 from the target direction
+    // These allow the realised exposure of the opposing camp (posted x n_followers_opp) to be
+    // compared across ablation conditions, independent of the nominal posting probability.
+    private void openTargetTrace() {
+        try {
+            targetTrace = Files.newBufferedWriter(Path.of(folerPath, "target_trace.csv"));
+            targetTrace.write("step,target_id,opinion,postProb,posted,n_followers,n_followers_opp,followers_mean_opinion\n");
+        } catch (IOException e) {
+            System.err.println("Failed to open target trace: " + e.getMessage());
+            targetTrace = null;
+        }
+    }
+
+    private void writeTargetTrace(int step, boolean[] targetPosted) {
+        if (targetTrace == null) return;
+        try {
+            for (Agent a : agentSet) {
+                if (!a.getTarget()) continue;
+                int nf = 0, nopp = 0;
+                double sum = 0.0;
+                for (int fid : admin.getFollowers(a.getId())) {
+                    double o = agentSet[fid].getOpinion();
+                    nf++;
+                    sum += o;
+                    if (o * Const.TARGET_DIRECTION < 0) nopp++;
+                }
+                targetTrace.write(step + "," + a.getId() + "," + a.getOpinion() + "," + a.getPostProb()
+                        + "," + (targetPosted[a.getId()] ? 1 : 0) + "," + nf + "," + nopp
+                        + "," + (nf > 0 ? sum / nf : Double.NaN) + "\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to write target trace: " + e.getMessage());
+        }
+    }
+
+    private void closeTargetTrace() {
+        if (targetTrace == null) return;
+        try { targetTrace.close(); } catch (IOException e) { /* nothing to recover */ }
+    }
+
+    // ── per-agent snapshot (every 1000 steps from 19000) ──────────────────────────────
+    // The standard writer only stores a 5-bin opinion histogram, too coarse for polarization
+    // indices (R3-5). Full per-agent opinions are stored at snapshot steps instead.
+    private void writeAgentSnapshot(int step) {
+        Path f = Path.of(folerPath, "agents", "agents_step_" + step + ".csv");
+        try (BufferedWriter w = Files.newBufferedWriter(f)) {
+            w.write("id,opinion,intrinsic_opinion,stubbornness,bc,postProb,is_target,n_followers\n");
+            for (Agent a : agentSet) {
+                w.write(a.getId() + "," + a.getOpinion() + "," + a.getIntrinsicOpinion() + "," + a.getStubbornness()
+                        + "," + a.getBc() + "," + a.getPostProb() + "," + (a.getTarget() ? 1 : 0)
+                        + "," + admin.getFollowers(a.getId()).size() + "\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to write agent snapshot: " + e.getMessage());
+        }
     }
 
     public static void main(String[] args) {
@@ -297,13 +377,17 @@ public class OpinionDynamics {
         }
 
         Const.RANDOM_SEED = seed;
-        Const.RESULT_FOLDER_PATH = "results/run_" + seed + "_dir_" + Const.TARGET_DIRECTION + "/";
+        // optional 3rd arg: experiment tag -> results/<tag>/run_*  (keeps ablation conditions apart)
+        String tag = args.length > 2 ? args[2] : "";
+        Const.RESULT_FOLDER_PATH = "results/" + (tag.isEmpty() ? "" : tag + "/")
+                + "run_" + seed + "_dir_" + Const.TARGET_DIRECTION + "/";
 
         String[] subfolders = {
             "clusterings",
             "degrees",
             "figures",
             "GEXF",
+            "agents",
             "metrics",
             "opinion",
             "posts"

@@ -64,6 +64,11 @@ public class SimConfig {
         return v != null ? Double.parseDouble(v.trim()) : def;
     }
 
+    public String getTopString(String key, String def) {
+        String v = topLevelParams.get(key);
+        return v != null ? v.trim() : def;
+    }
+
     public double getTopDouble(String key, double def) {
         String v = topLevelParams.get(key);
         return v != null ? Double.parseDouble(v.trim()) : def;

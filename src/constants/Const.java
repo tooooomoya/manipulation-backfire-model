@@ -31,6 +31,19 @@ public class Const {
     public static final double INITIAL_PP = 0.1; // Prob of Posting
     public static final double MAX_PP = 0.5;
     public static final double MIN_PP = 0.05;
+
+    // ── manipulation ablation (JCSO R1, reviewer 3 item 3) ─────────────────────
+    // Defaults reproduce the submitted model exactly (shift on, rho fixed at MAX_PP, delta 0.01).
+    // The target's opinion shift and its posting-probability treatment are separable:
+    //   FIXED  : rho = MANIP_RHO_VALUE at every update (submitted model uses MAX_PP)
+    //   FREE   : rho evolves endogenously like any agent (no intervention on rho)
+    //   FREEZE : rho held at the target's own value at manipulation onset
+    public enum RhoMode { FIXED, FREE, FREEZE }
+    public static boolean MANIP_SHIFT = true;      // false: target follows ordinary Friedkin-Johnsen update
+    public static RhoMode MANIP_RHO_MODE = RhoMode.FIXED;
+    public static double MANIP_RHO_VALUE = MAX_PP;
+    public static double MANIP_DELTA = 0.01;       // Δ: opinion shift per platform access of the target
+    public static String EXP_TAG = "";             // optional sub-folder under results/ for non-default conditions
     public static double DELTA_PP = 0.1;          // δ_ρ: posting-prob adjustment rate; overridable via config
     public static final double INCREMENT_PP = 0.1;
     public static final double DECREMENT_PP = INCREMENT_PP;

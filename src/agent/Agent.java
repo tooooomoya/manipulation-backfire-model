@@ -18,6 +18,8 @@ public class Agent {
     private double postProb;
     private List<Post> feed = new ArrayList<>(); // timeline
     private double useProb = Const.INITIAL_PU;
+    private boolean rhoTreated = false; // true once the first post-onset updateMyself() has applied the rho treatment
+    private double frozenPostProb; // target's rho at manipulation onset (used when MANIP_RHO_MODE == FREEZE)
     private boolean target = false; // for further simulation like using bots
     private int timeStep;
     private boolean[] followList = new boolean[NUM_OF_AGENTS];
@@ -173,6 +175,22 @@ public class Agent {
 
     public void setTarget() {
         this.target = true;
+        this.frozenPostProb = this.postProb;
+    }
+
+    // Impose the experimental posting-probability treatment on the manipulation target.
+    // Called wherever postProb is modified so that the treatment is not diluted by the
+    // endogenous updates (updatePostProb / comfort-rate adjustment).
+    // The treatment starts at the end of the target's first post-onset access (as in the
+    // submitted model, where rho was set inside updateMyself); before that the endogenous
+    // value is left untouched so the default condition reproduces the submitted model exactly.
+    private void applyTargetPostProb() {
+        if (!this.target || !this.rhoTreated) return;
+        switch (Const.MANIP_RHO_MODE) {
+            case FIXED -> this.postProb = Const.MANIP_RHO_VALUE;
+            case FREEZE -> this.postProb = this.frozenPostProb;
+            case FREE -> { }
+        }
     }
 
     public void addToPostCash(Post post) {
@@ -222,6 +240,7 @@ public class Agent {
         this.postProb *= 1.0 + increment;
 
         this.postProb = Math.min(this.postProb, Const.MAX_PP);
+        applyTargetPostProb();
         this.recievedLikeCount = 0;
     }
 
@@ -266,9 +285,14 @@ public class Agent {
 
         //// social influence
 
-        if(this.target) {
-            this.opinion += 0.01 * Const.TARGET_DIRECTION;
-            this.postProb = Const.MAX_PP;
+        if (this.target) {
+            this.rhoTreated = true;
+            applyTargetPostProb();
+        }
+
+        if (this.target && Const.MANIP_SHIFT) {
+            // manipulated target: opinion shifts by Δ, bypassing the social-influence update
+            this.opinion += Const.MANIP_DELTA * Const.TARGET_DIRECTION;
         } else if (postNum > 0) {
             // standard DeGroot model with stubbornness (= Friedkin-Johnsen model) 
             this.opinion = this.stubbornness * this.intrinsicOpinion + (1 - this.stubbornness) * (temp / postNum);
