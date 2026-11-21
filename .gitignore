@@ -8,3 +8,5 @@ venv/
 out/
 progress/
 .claude/
+# archived pre-revision results (kept for reference; regenerated runs go to results/)
+results_archive_pre_revision/
